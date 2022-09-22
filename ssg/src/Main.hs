@@ -19,7 +19,7 @@ import Text.Pandoc.Walk
 -- Config
 ---------
 root :: String
-root = "https://kotatsuyaki.github.io"
+root = "https://blog.kotatsu.dev"
 
 siteName :: String
 siteName =
