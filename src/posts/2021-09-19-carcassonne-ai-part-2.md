@@ -4,6 +4,7 @@ description: "My journey towards AlphaZero-style bots for a board game (Part II)
 date: 2021-09-19
 sort_by: "date"
 author: kotatsuyaki (Ming-Long Huang)
+enable-toc: true
 ---
 
 *2021/10/04 update: Rust-C++ interop with the cxx crate*

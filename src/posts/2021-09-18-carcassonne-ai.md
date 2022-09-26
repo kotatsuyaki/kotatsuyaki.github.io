@@ -4,6 +4,7 @@ description: "My journey towards AlphaZero-style bots for a board game (Part I)"
 date: 2021-09-18
 sort_by: "date"
 author: kotatsuyaki (Ming-Long Huang)
+enable-toc: true
 ---
 
 ![Game interface written with Flutter, a by-product of this project](/images/Screenshot_20210918_215801.png)
