@@ -8,9 +8,10 @@
 import Control.Monad.State
 import Data.Functor.Identity (runIdentity)
 import Data.List (isInfixOf)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text, unlines)
 import Hakyll
+import System.Environment (getArgs, withArgs)
 import System.FilePath.Posix
 import Text.Pandoc (Block (Header, Null, RawBlock), Format (Format), HTMLMathMethod (MathJax), Inline (Span, Str), Pandoc, Template, WriterOptions (writerHTMLMathMethod, writerTOCDepth, writerTableOfContents, writerTemplate), compileTemplate, getDefaultExtensions, writerExtensions)
 import Text.Pandoc.Walk
@@ -42,79 +43,80 @@ config =
 --------
 
 main :: IO ()
-main = hakyllWith config $ do
-  forM_
-    [ "CNAME",
-      "robots.txt",
-      "images/*",
-      ".nojekyll"
-    ]
-    $ \f -> match f $ do
-      route idRoute
-      compile copyFileCompiler
+main = do
+  originalArgs <- getArgs
+  let enableDraftsFlag = "--enable-drafts"
+  let isDraftsEnabled = enableDraftsFlag `elem` originalArgs
 
-  match "css/*" $ do
-    route idRoute
-    compile compressCssCompiler
+  let remove element = filter (/= element)
+  let newArgs = remove enableDraftsFlag originalArgs
 
-  match "posts/*" $ do
-    let ctx =
-          constField "root" root
-            <> constField "type" "article"
-            <> constField "siteName" siteName
-            <> constField "lang" "en"
-            <> postCtx
+  let postsPattern =
+        if isDraftsEnabled
+          then fromGlob "posts/*" .||. fromGlob "drafts/*"
+          else fromGlob "posts/*"
+  when isDraftsEnabled $ putStrLn "WARNING: Drafts enabled"
 
-    route niceRoute
-    compile $ do
-      -- Compile and save the teaser
-      _ <- pandocTeaserCompiler >>= saveSnapshot "teaser"
+  withArgs newArgs $
+    hakyllWith config $ do
+      forM_
+        [ "CNAME",
+          "robots.txt",
+          "images/*",
+          ".nojekyll"
+        ]
+        $ \f -> match f $ do
+          route idRoute
+          compile copyFileCompiler
 
-      -- Compile the post and apply post template
-      pandocPostCompiler
-        >>= loadAndApplyTemplate "templates/postbody.html" ctx
-        >>= loadAndApplyTemplate "templates/shared.html" ctx
+      match "css/*" $ do
+        route idRoute
+        compile compressCssCompiler
 
-  create ["index.html"] $ do
-    route idRoute
-    compile $ do
-      posts <- recentFirst =<< loadAllSnapshots "posts/*" "teaser"
+      match postsPattern $ do
+        route niceRoute
+        compile $ do
+          -- Compile and save the teaser
+          _ <- pandocTeaserCompiler >>= saveSnapshot "teaser"
 
-      let indexCtx =
-            listField "posts" postCtx (return posts)
-              <> constField "root" root
-              <> constField "siteName" siteName
-              <> constField "lang" "en"
-              <> defaultContext
+          -- Compile the post and apply post template
+          pandocPostCompiler
+            >>= loadAndApplyTemplate "templates/postbody.html" postCtx
+            >>= loadAndApplyTemplate "templates/shared.html" postCtx
 
-      makeItem ("" :: String)
-        >>= loadAndApplyTemplate "templates/shared.html" indexCtx
-        >>= removeIndexHtml
+      create ["index.html"] $ do
+        route idRoute
+        compile $ do
+          posts <- recentFirst =<< loadAllSnapshots postsPattern "teaser"
 
-  match "templates/*" $
-    compile templateBodyCompiler
+          makeItem ("" :: String)
+            >>= loadAndApplyTemplate "templates/shared.html" (indexCtxOf posts)
+            >>= removeIndexHtml
 
-  create ["sitemap.xml"] $ do
-    route idRoute
-    compile $ do
-      posts <- recentFirst =<< loadAll "posts/*"
+      match "templates/*" $
+        compile templateBodyCompiler
 
-      let pages = posts
-          sitemapCtx =
-            constField "root" root
-              <> constField "siteName" siteName
-              <> listField "pages" postCtx (return pages)
+      create ["sitemap.xml"] $ do
+        route idRoute
+        compile $ do
+          posts <- recentFirst =<< loadAll postsPattern
 
-      makeItem ("" :: String)
-        >>= loadAndApplyTemplate "templates/sitemap.xml" sitemapCtx
+          let pages = posts
+              sitemapCtx =
+                constField "root" root
+                  <> constField "siteName" siteName
+                  <> listField "pages" postCtx (return pages)
 
-  create ["rss.xml"] $ do
-    route idRoute
-    compile (feedCompiler renderRss)
+          makeItem ("" :: String)
+            >>= loadAndApplyTemplate "templates/sitemap.xml" sitemapCtx
 
-  create ["atom.xml"] $ do
-    route idRoute
-    compile (feedCompiler renderAtom)
+      create ["rss.xml"] $ do
+        route idRoute
+        compile (feedCompiler renderRss)
+
+      create ["atom.xml"] $ do
+        route idRoute
+        compile (feedCompiler renderAtom)
 
 -----------
 -- Contexts
@@ -126,11 +128,21 @@ feedCtx =
     <> postCtx
     <> bodyField "description"
 
+indexCtxOf :: [Item String] -> Context String
+indexCtxOf posts =
+  listField "posts" postCtx (return posts)
+    <> constField "root" root
+    <> constField "siteName" siteName
+    <> constField "lang" "en"
+    <> defaultContext
+
 postCtx :: Context String
 postCtx =
   constField "root" root
     <> constField "siteName" siteName
     <> dateField "date" "%Y-%m-%d"
+    <> constField "type" "article"
+    <> constField "lang" "en"
     <> defaultContext
 
 titleCtx :: Context String
@@ -163,12 +175,15 @@ safeTitle =
 -- Post compiler without any additional transformations
 pandocPostCompiler :: Compiler (Item String)
 pandocPostCompiler =
-  baseCompiler id tocTemplate
+  baseCompiler id tocTemplateIfEnabled
+  where
+    tocTemplateIfEnabled True = tocPostTemplate
+    tocTemplateIfEnabled False = plainPostTemplate
 
 -- Teaser compiler & its Pandoc transformations
 pandocTeaserCompiler :: Compiler (Item String)
 pandocTeaserCompiler =
-  baseCompiler (removeAfterMore . removeSidenotes . lowerHeaders) plainTemplate
+  baseCompiler (removeAfterMore . removeSidenotes . lowerHeaders) (const summaryTemplate)
 
 removeAfterMore :: Pandoc -> Pandoc
 removeAfterMore doc = evalState (walkM ram doc) False
@@ -200,8 +215,10 @@ lowerHeaders = walk lh
     lh x = x
 
 -- Base compiler shared between the teaser and the post compiler
-baseCompiler :: (Pandoc -> Pandoc) -> Text.Pandoc.Template Text -> Compiler (Item String)
-baseCompiler transf template = do
+baseCompiler :: (Pandoc -> Pandoc) -> (Bool -> Text.Pandoc.Template Text) -> Compiler (Item String)
+baseCompiler transf getTemplate = do
+  metadata <- getMetadata =<< getUnderlying
+  let isTocEnabled = isJust $ lookupString "enable-toc" metadata
   getResourceBody
     >>= withItemBody
       ( unixFilter
@@ -223,15 +240,15 @@ baseCompiler transf template = do
               writerHTMLMathMethod = MathJax "",
               writerTOCDepth = 2,
               writerTableOfContents = True,
-              writerTemplate = Just template
+              writerTemplate = Just (getTemplate isTocEnabled)
             }
         )
 
-plainTemplate :: Text.Pandoc.Template Text
-plainTemplate = either error id . runIdentity . compileTemplate "" $ "$body$"
+summaryTemplate :: Text.Pandoc.Template Text
+summaryTemplate = either error id . runIdentity . compileTemplate "" $ "$body$"
 
-tocTemplate :: Text.Pandoc.Template Text
-tocTemplate =
+tocPostTemplate :: Text.Pandoc.Template Text
+tocPostTemplate =
   either error id . runIdentity . compileTemplate "" $
     Data.Text.unlines
       [ "<nav id=\"TOC\" role=\"doc-toc\">",
@@ -241,6 +258,9 @@ tocTemplate =
         "</nav>",
         "<main>$body$</main>"
       ]
+
+plainPostTemplate :: Text.Pandoc.Template Text
+plainPostTemplate = either error id . runIdentity . compileTemplate "" $ "<main>$body$</main>"
 
 -------
 -- Feed
