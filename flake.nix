@@ -27,7 +27,20 @@
           exePath = "/bin/hakyll-site";
         };
 
-        devShell = pkgs.myHaskellPackages.shellFor {
+        # Default development shell for editing blog posts
+        devShells.default = with pkgs; mkShell {
+          packages = [
+            myHaskellPackages.ssg
+            myHaskellPackages.pandoc
+            myHaskellPackages.pandoc-crossref
+            myHaskellPackages.pandoc-sidenote
+            rnix-lsp
+            ltex-ls
+          ];
+        };
+
+        # Development shell for editing the site generator
+        devShells.haskell = pkgs.myHaskellPackages.shellFor {
           packages = p: [ p.ssg ];
 
           buildInputs = with pkgs.myHaskellPackages; [
