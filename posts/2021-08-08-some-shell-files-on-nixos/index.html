@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>A Collection of Several shell.nix Files</title>
+    
+    <meta name="dcterms.created" content="2021-08-08" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">A Collection of Several shell.nix Files</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2021-08-08">2021-08-08</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <main><p>For a while I’ve been migrating my old codebases to use Nix and
+<a href="https://github.com/target/lorri">lorri</a> to manage dev environments.
+Some advantages I’ve found so far:</p>
+<ul>
+<li>Self-containedness: the development tools are nicely packed with the
+project itself, so no more globally-installed cli tools that are
+only used in one project.</li>
+<li>Multiple versions of the same tool: different projects can use
+different versions of the same package.</li>
+<li>The ability to simply <code>cd</code> into the project directory and have the
+development environment automatically setup (this is made possible
+by <a href="https://github.com/direnv/direnv">direnv</a>).</li>
+</ul>
+<!-- more -->
+<p>For some programming languages though, environment setup via <code>shell.nix</code>
+may be non-trivial and requires some searching here and there to be
+fitured out. Here are some of my <code>shell.nix</code> files.</p>
+<h1 id="rust-development">Rust development</h1>
+<p>As of the time of writing, rust-analyzer on stable nixpkgs suffers from
+some subtle bugs, so <code>unstable.rust-analyzer</code> is used instead. <code>lld</code> is
+used to speed up linkage, and <code>sccache</code> is used to cache build results.</p>
+<p>For more information, see
+<a href="https://github.com/oxalica/rust-overlay">rust-overlay</a>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">pkgs</span> <span class="op">?</span> <span class="op">(</span><span class="bu">import</span> &lt;nixpkgs&gt; <span class="op">{</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Rust overlay</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="va">overlays</span> <span class="op">=</span> <span class="op">[</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>      <span class="op">(</span><span class="bu">import</span> <span class="op">(</span><span class="bu">builtins</span>.<span class="bu">fetchTarball</span> <span class="op">{</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">url</span> <span class="op">=</span> <span class="va">https</span><span class="op">://</span><span class="ss">github.com/oxalica/rust-overlay/archive/master.tar.gz</span><span class="op">;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>      <span class="op">}))</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">];</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="va">config</span>.<span class="va">allowUnfree</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="op">}),</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="va">lib</span> <span class="op">?</span> pkgs.stdenv.lib</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>:</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="va">unstable</span> <span class="op">=</span> <span class="bu">import</span> <span class="op">(</span><span class="bu">fetchTarball</span> <span class="st">&quot;https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz&quot;</span><span class="op">)</span> <span class="op">{};</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  pkgs.mkShell <span class="kw">rec</span> <span class="op">{</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="va">buildInputs</span> <span class="op">=</span> <span class="kw">with</span> pkgs<span class="op">;</span> <span class="op">[</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>      <span class="co"># rust</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>      unstable.rust-analyzer</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>      <span class="op">(</span>rust<span class="op">-</span>bin.stable.latest.default.override <span class="op">{</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>        <span class="va">extensions</span> <span class="op">=</span> <span class="op">[</span> <span class="st">&quot;rust-src&quot;</span> <span class="op">];</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>      <span class="op">})</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>      <span class="co"># optional</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>      llvmPackages.lld sccache</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="op">];</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    <span class="co"># optional</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    <span class="va">RUSTFLAGS</span> <span class="op">=</span> <span class="st">&quot;-C link-arg=-fuse-ld=lld&quot;</span><span class="op">;</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    <span class="co"># optional</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    <span class="va">RUSTC_WRAPPER</span> <span class="op">=</span> <span class="st">&quot;</span><span class="sc">${</span>pkgs.sccache<span class="sc">}</span><span class="st">/bin/sccache&quot;</span><span class="op">;</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span></code></pre></div>
+<h1 id="flutter-development-targeting-linux-desktop">Flutter development targeting Linux desktop</h1>
+<p>This is what I have that works so far - I’m not sure if there’s a better
+solution than the dirty <code>$LD_LIBRARY_PATH</code> trick.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="va">pkgs</span> <span class="op">?</span> <span class="bu">import</span> &lt;nixpkgs&gt; <span class="op">{}</span> <span class="op">}</span>:</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">flutter-linux-buildtools</span> <span class="op">=</span> <span class="kw">with</span> pkgs<span class="op">;</span> <span class="op">[</span>cmake ninja clang pkgconfig<span class="op">];</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">flutter-linux-deps</span> <span class="op">=</span> <span class="kw">with</span> pkgs<span class="op">;</span> <span class="op">[</span>gtk3 glib lzma pcre util-linux libselinux libsepol libthai libdatrie xorg.libXdmcp xorg.libXtst libxkbcommon epoxy dbus at-spi2-core<span class="op">];</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  pkgs.mkShell <span class="op">{</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="va">buildInputs</span> <span class="op">=</span> <span class="kw">with</span> pkgs<span class="op">;</span> <span class="op">[</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>      flutter</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">]</span> <span class="op">++</span> flutter<span class="op">-</span>linux<span class="op">-</span>buildtools <span class="op">++</span> flutter<span class="op">-</span>linux<span class="op">-</span>deps<span class="op">;</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="va">shellHook</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="st">      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:</span><span class="sc">${</span>pkgs.wayland<span class="sc">}</span><span class="st">/lib:</span><span class="sc">${</span>pkgs.libglvnd<span class="sc">}</span><span class="st">/lib:</span><span class="sc">${</span>pkgs.xorg.libX11<span class="sc">}</span><span class="st">/lib</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="st">      export FLUTTER_SDK=</span><span class="sc">${</span>pkgs.flutter.unwrapped<span class="sc">}</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="st">    &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span></code></pre></div></main>
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

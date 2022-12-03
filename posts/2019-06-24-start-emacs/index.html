@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>Let's Start Emacs (For No Apparent Reason)</title>
+    
+    <meta name="dcterms.created" content="2019-06-24" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">Let's Start Emacs (For No Apparent Reason)</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2019-06-24">2019-06-24</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <main><p>For a long time, I’ve been sticking to <a href="https://www.vim.org/">vim</a> as my
+primary editor. I tried to integrate as much editing functionalities
+into it as I could. The result turned out to be great, but with the
+growing count of loaded plugins the editor starts to slow down,
+eventually rendering it unusable. Yes, I still input characters at my
+full speed, but the enormous lag of the cursor annoys me <em>a lot</em>.</p>
+<p>On a sunday morning (not sure when) I finally couldn’t withstand the
+sluggish environment and fired up <code>emacs</code>. It’s like “How to exit vim”
+joke but more difficult IMO, with all those cryptic key bindings and
+commands.</p>
+<!-- more -->
+<h1 id="whats-emacs-exactly">What’s Emacs, exactly?</h1>
+<p>From GNU’s own manual it reads:</p>
+<blockquote>
+<p>Emacs is the extensible, customizable, self-documenting real-time
+display editor.</p>
+</blockquote>
+<p>Okay hold on, I don’t quite understand that.</p>
+<p>Simply put, assuming that you’ve used Vim before, we can make a quick
+comparison. Vim is a good <em>text editor</em>, while Emacs is a good <em>text
+editor, file manager, debugger, game center, and more.</em> It can do nearly
+whatever you want, provided that there’s an package for that purpose (we
+might talk about that later). Some folks on the Internet calls it an
+operating system, which is true to some degree.</p>
+<h1 id="why-emacs">Why Emacs?</h1>
+<ul>
+<li>Never have to exit Emacs (?)</li>
+<li>Consistency. Instead of learning separate tools, just use Emacs.</li>
+<li>Extensibility. Compose new packages if you’re free.</li>
+<li>It’s cool, just like vim.</li>
+</ul>
+<h1 id="installation">Installation</h1>
+<p>I’m using emacs on Manjaro / Arch Linux. If it’s the case, then
+installing emacs is quite straightforward; just issue the following
+commands in your favorite terminal emulator:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> pacman <span class="at">-Syu</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> pacman <span class="at">-S</span> emacs</span></code></pre></div>
+<p>On other operating systems, check out <a href="https://www.gnu.org/software/emacs/download.html#gnu-linux">their official installation
+guide</a>.</p>
+<h1 id="basic-usage">Basic Usage</h1>
+<p>Now we can start using emacs. I’ll cover…</p>
+<ul>
+<li>Terms</li>
+<li>Starting and exiting (Yes it’s important)</li>
+<li>Opening and saving files</li>
+<li>Commands</li>
+</ul>
+<h2 id="terms">Terms</h2>
+<p>When viewing manuals, forum posts or answers on SO, you’ll often
+encounter some abbreviations of the key bindings.</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">abbreviation</th>
+<th style="text-align: left;">meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>C-[key]</code></td>
+<td style="text-align: left;">Hold down <code>Ctrl</code> and press <code>[key]</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>M-[key]</code></td>
+<td style="text-align: left;">Hold down <code>Meta</code> and press <code>[key]</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>RET</code></td>
+<td style="text-align: left;">Press the enter key</td>
+</tr>
+</tbody>
+</table>
+<p>Here the <code>Meta</code> is somewhat confusing, as I haven’t seen a physical
+keyboard with that key in my
+life.<span class="sidenote-wrapper"><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle"/><span class="sidenote">A
+quick googling yields it’s <a href="https://en.wikipedia.org/wiki/Meta_key">history on
+wikipedia</a>. The <a href="https://www.gnu.org/software/emacs/manual/html_node/efaq">GNU Emacs
+FAQ</a> suggests
+some workarounds for the meta key issue.<br />
+<br />
+</span></span> On most machines, either the windows
+key or the <code>Alt</code> key is equivalent to the meta key.</p>
+<p>If you encounter a sequence like <code>C-h t</code>, interpret them as separate
+keystrokes: Hold down <code>Ctrl</code>, press <code>h</code>, release <code>Ctrl</code>, and finally
+press <code>t</code> alone.</p>
+<h2 id="starting-and-exiting-emacs">Starting and Exiting Emacs</h2>
+<p>Emacs comes with both graphical (GUI) and text (TUI) user interfaces.
+The graphical one has better support of displaying images etc., while
+launching the TUI can let you integrate it into your terminal emulator
+of choice. If you prefer to use emacs inside a terminal, then type
+<code>emacs -nw</code> to start
+it.<span class="sidenote-wrapper"><label for="sn-1" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-1" class="margin-toggle"/><span class="sidenote">I
+haven’t found a better solution to this issue. It seems that there’s no
+easy way to configure emacs to always launch without X window, while
+there are workarounds like shell aliases etc., which are beyond the
+topic of this post.<br />
+<br />
+</span></span> The <code>-nw</code> switch stands for “no
+window”. Otherwise, just start it normally.</p>
+<p><img src="/images/emacs-img-1.png" /></p>
+<p>You should be greeted by the welcome buffer of Emacs once it started. To
+quit Emacs, do <code>C-x C-c</code> (recall last section in case you don’t remember
+what <code>C-[key]</code> is).</p>
+<h2 id="opening-and-saving-files">Opening and Saving Files</h2>
+<p>There are many ways to open a file. For the most basic operations, refer
+to the following list. Notice that all these common tasks starts with
+<code>C-x</code>, which is a global prefix key.</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">keys</th>
+<th style="text-align: left;">action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>C-x C-f</code></td>
+<td style="text-align: left;">Open a file</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>C-x C-s</code></td>
+<td style="text-align: left;">Save file</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>C-x C-w</code></td>
+<td style="text-align: left;">Save as…</td>
+</tr>
+</tbody>
+</table>
+<h2 id="manipulating-buffers-and-windows">Manipulating Buffers and Windows</h2>
+<p>“Buffers” is similar to the idea of “tabs” that occur in GUI
+applications nowadays. The text you edit in Emacs, the built-in file
+manager, and the welcome message are all contained in their own buffer.</p>
+<p>“Windows” on the other hand, is a fancy word for “panels”. It’s
+basically the splits that you may see in a emacs session. I’m not going
+into details about the cluttering of these terms, as <a href="https://emacs.stackexchange.com/a/13584">this SO
+answer</a> explains it better than
+I can.</p>
+<table style="width:99%;">
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 94%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">keys</th>
+<th style="text-align: left;">action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>C-x k</code></td>
+<td style="text-align: left;">Kill the current buffer</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>C-x C-left</code></td>
+<td style="text-align: left;">Prev buffer</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>C-x C-right</code></td>
+<td style="text-align: left;">Next buffer</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>C-x b</code></td>
+<td style="text-align: left;">Switch to buffer with name (prompt)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>C-x C-b</code></td>
+<td style="text-align: left;">Open the buffer manager<span class="sidenote-wrapper"><label for="sn-2" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-2" class="margin-toggle"/><span class="sidenote">Not recommended. Using the default buffer manager is a pain in the ass. I’d recommend <code>ibuffer</code> (<code>M-x ibuffer RET</code>).<br />
+<br />
+</span></span></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>C-x 0</code></td>
+<td style="text-align: left;">Close the current window</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>C-x 2 or 3</code></td>
+<td style="text-align: left;">Split window horizontally / vertically</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>C-x o</code></td>
+<td style="text-align: left;">Switch to next window<span class="sidenote-wrapper"><label for="sn-3" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-3" class="margin-toggle"/><span class="sidenote">Not recommended. This is only useful when you have only 2-3 windows displayed.<br />
+<br />
+</span></span></td>
+</tr>
+</tbody>
+</table>
+<h2 id="invoking-commands">Invoking Commands</h2>
+<p>In Emacs, those functionalities which aren’t bound to key mappings are
+generally accessed through it’s command prompt. Press <code>M-x</code> to open it
+on the bottom of the screen, under the mode line. I’ll get deeper into
+this (if I’m not lazy) in upcoming posts, but you may play with some
+interesting <del>games</del> commands first:</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">command</th>
+<th style="text-align: left;">description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>M-x calculator</code></td>
+<td style="text-align: left;">A calculator</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>M-x calendar</code></td>
+<td style="text-align: left;">A calendar</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>M-x tetris</code></td>
+<td style="text-align: left;">The tetris game, built-in!</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>M-x 5x5</code></td>
+<td style="text-align: left;">5x5 logic puzzle</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>M-x bubbles</code></td>
+<td style="text-align: left;">Clear out bubbles game</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>M-x gomoku</code></td>
+<td style="text-align: left;">Connect 5 squares (五目)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>M-x life</code></td>
+<td style="text-align: left;">Conway’s Game of Life</td>
+</tr>
+</tbody>
+</table>
+<p>… and more.</p>
+<hr />
+<h1 id="references">References</h1>
+<p><a href="https://www.gnu.org/software/emacs/manual/emacs.html">The GNU Emacs
+manual</a></p></main>
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

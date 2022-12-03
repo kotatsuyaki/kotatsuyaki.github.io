@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>Completion for GL Crate in Vim</title>
+    
+    <meta name="dcterms.created" content="2020-07-30" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">Completion for GL Crate in Vim</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2020-07-30">2020-07-30</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <main><p>Tl;dr you need to enable these two coc config options:</p>
+<ul>
+<li><code>rust-analyzer.cargo.loadOutDirsFromCheck</code></li>
+<li><code>rust-analyzer.procMacro.enable</code></li>
+</ul>
+<hr />
+<p>Earlier in this year I <a href="https://github.com/rust-analyzer/rust-analyzer/issues/3467">filed a issue to
+rust-analyzer</a>
+for completion with crates using build scripts to generate bindings such
+as <code>gl</code>. The support for the
+<code>include!(concat!(env!("OUT_DIR"), "/bindings.rs"))</code> combo landed pretty
+quick within weeks.</p>
+<p>Minimal <code>.vimrc</code> to test it out:</p>
+<pre class="vim"><code>call plug#begin(&#39;~/.vim/plugged&#39;)
+Plug &#39;neoclide/coc.nvim&#39;, {&#39;branch&#39;: &#39;release&#39;}
+call plug#end()
+
+source ~/.cocrc</code></pre>
+<!-- more -->
+<p>The <code>.cocrc</code> file is directly copied from the readme of coc.nvim. I
+found it cleaner to split these settings into separate files, making the
+main config shorter at the cost of having multiple dotfiles.</p>
+<p>{% spoiler(summary=“The <code>.cocrc</code> file”) %}</p>
+<pre class="vim"><code>set hidden
+
+set nobackup
+set nowritebackup
+
+set cmdheight=2
+
+set updatetime=300
+
+set shortmess+=c
+
+if has(&quot;patch-8.1.1564&quot;)
+  &quot; Recently vim can merge signcolumn and number column into one
+  set signcolumn=number
+else
+  set signcolumn=yes
+endif
+
+inoremap &lt;silent&gt;&lt;expr&gt; &lt;TAB&gt;
+      \ pumvisible() ? &quot;\&lt;C-n&gt;&quot; :
+      \ &lt;SID&gt;check_back_space() ? &quot;\&lt;TAB&gt;&quot; :
+      \ coc#refresh()
+inoremap &lt;expr&gt;&lt;S-TAB&gt; pumvisible() ? &quot;\&lt;C-p&gt;&quot; : &quot;\&lt;C-h&gt;&quot;
+
+function! s:check_back_space() abort
+  let col = col(&#39;.&#39;) - 1
+  return !col || getline(&#39;.&#39;)[col - 1]  =~# &#39;\s&#39;
+endfunction
+
+if has(&#39;nvim&#39;)
+  inoremap &lt;silent&gt;&lt;expr&gt; &lt;c-space&gt; coc#refresh()
+else
+  inoremap &lt;silent&gt;&lt;expr&gt; &lt;c-@&gt; coc#refresh()
+endif
+
+if exists(&#39;*complete_info&#39;)
+  inoremap &lt;expr&gt; &lt;cr&gt; complete_info()[&quot;selected&quot;] != &quot;-1&quot; ? &quot;\&lt;C-y&gt;&quot; : &quot;\&lt;C-g&gt;u\&lt;CR&gt;&quot;
+else
+  inoremap &lt;expr&gt; &lt;cr&gt; pumvisible() ? &quot;\&lt;C-y&gt;&quot; : &quot;\&lt;C-g&gt;u\&lt;CR&gt;&quot;
+endif
+
+nmap &lt;silent&gt; [g &lt;Plug&gt;(coc-diagnostic-prev)
+nmap &lt;silent&gt; ]g &lt;Plug&gt;(coc-diagnostic-next)
+
+nmap &lt;silent&gt; gd &lt;Plug&gt;(coc-definition)
+nmap &lt;silent&gt; gy &lt;Plug&gt;(coc-type-definition)
+nmap &lt;silent&gt; gi &lt;Plug&gt;(coc-implementation)
+nmap &lt;silent&gt; gr &lt;Plug&gt;(coc-references)
+
+nnoremap &lt;silent&gt; K :call &lt;SID&gt;show_documentation()&lt;CR&gt;
+
+function! s:show_documentation()
+  if (index([&#39;vim&#39;,&#39;help&#39;], &amp;filetype) &gt;= 0)
+    execute &#39;h &#39;.expand(&#39;&lt;cword&gt;&#39;)
+  else
+    call CocAction(&#39;doHover&#39;)
+  endif
+endfunction
+
+autocmd CursorHold * silent call CocActionAsync(&#39;highlight&#39;)
+
+nmap &lt;leader&gt;rn &lt;Plug&gt;(coc-rename)
+
+xmap &lt;leader&gt;f  &lt;Plug&gt;(coc-format-selected)
+nmap &lt;leader&gt;f  &lt;Plug&gt;(coc-format-selected)
+
+augroup mygroup
+  autocmd!
+  &quot; Setup formatexpr specified filetype(s).
+  autocmd FileType typescript,json setl formatexpr=CocAction(&#39;formatSelected&#39;)
+  &quot; Update signature help on jump placeholder.
+  autocmd User CocJumpPlaceholder call CocActionAsync(&#39;showSignatureHelp&#39;)
+augroup end
+
+xmap &lt;leader&gt;a  &lt;Plug&gt;(coc-codeaction-selected)
+nmap &lt;leader&gt;a  &lt;Plug&gt;(coc-codeaction-selected)
+
+nmap &lt;leader&gt;ac  &lt;Plug&gt;(coc-codeaction)
+nmap &lt;leader&gt;qf  &lt;Plug&gt;(coc-fix-current)
+
+xmap if &lt;Plug&gt;(coc-funcobj-i)
+omap if &lt;Plug&gt;(coc-funcobj-i)
+xmap af &lt;Plug&gt;(coc-funcobj-a)
+omap af &lt;Plug&gt;(coc-funcobj-a)
+xmap ic &lt;Plug&gt;(coc-classobj-i)
+omap ic &lt;Plug&gt;(coc-classobj-i)
+xmap ac &lt;Plug&gt;(coc-classobj-a)
+omap ac &lt;Plug&gt;(coc-classobj-a)
+
+nmap &lt;silent&gt; &lt;C-s&gt; &lt;Plug&gt;(coc-range-select)
+xmap &lt;silent&gt; &lt;C-s&gt; &lt;Plug&gt;(coc-range-select)
+
+command! -nargs=0 Format :call CocAction(&#39;format&#39;)
+
+command! -nargs=? Fold :call     CocAction(&#39;fold&#39;, &lt;f-args&gt;)
+
+command! -nargs=0 OR   :call     CocAction(&#39;runCommand&#39;, &#39;editor.action.organizeImport&#39;)
+
+set statusline^=%{coc#status()}%{get(b:,&#39;coc_current_function&#39;,&#39;&#39;)}
+
+nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;a  :&lt;C-u&gt;CocList diagnostics&lt;cr&gt;
+nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;e  :&lt;C-u&gt;CocList extensions&lt;cr&gt;
+nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;c  :&lt;C-u&gt;CocList commands&lt;cr&gt;
+nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;o  :&lt;C-u&gt;CocList outline&lt;cr&gt;
+nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;s  :&lt;C-u&gt;CocList -I symbols&lt;cr&gt;
+nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;j  :&lt;C-u&gt;CocNext&lt;CR&gt;
+nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;k  :&lt;C-u&gt;CocPrev&lt;CR&gt;
+nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;p  :&lt;C-u&gt;CocListResume&lt;CR&gt;</code></pre>
+<p>{% end %}</p>
+<p>Install the coc-rust-analyzer plugin.</p>
+<pre class="vim"><code>:CocInstall coc-rust-analyzer</code></pre>
+<p>Add two entries to the COC config file (which can be opened via
+<code>:CocConfig</code>).</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;rust-analyzer.cargo.loadOutDirsFromCheck&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;rust-analyzer.procMacro.enable&quot;</span><span class="fu">:</span> <span class="kw">true</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>Create a project to test it out.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cargo init test-project</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> echo <span class="st">&#39;gl = &quot;0.14&quot;&#39;</span> <span class="op">&gt;&gt;</span> Cargo.toml <span class="kw">&amp;&amp;</span> <span class="ex">cargo</span> build</span></code></pre></div>
+<p>Now we have completion working as intended.</p>
+<p><img src="/images/img.png" /></p></main>
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

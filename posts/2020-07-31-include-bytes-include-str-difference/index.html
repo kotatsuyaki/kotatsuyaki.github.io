@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>Difference between include_str and include_bytes</title>
+    
+    <meta name="dcterms.created" content="2020-07-31" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">Difference between include_str and include_bytes</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2020-07-31">2020-07-31</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <main><ul>
+<li><p><a href="https://doc.rust-lang.org/std/macro.include_bytes.html"><code>include_bytes</code></a></p>
+<p>The expression is of type <code>&amp;'static [u8; N]</code>, so non-UTF8 data also
+works.</p></li>
+<li><p><a href="https://doc.rust-lang.org/std/macro.include_str.html"><code>include_str</code></a></p>
+<p>The expression is of type <code>&amp;'static str'</code>, so the file must be UTF-8
+encoded.</p></li>
+</ul>
+<h1 id="what-happens-if-we-include_str-on-non-utf8-files">What happens if we <code>include_str</code> on non-utf8 files?</h1>
+<p>Will the Rust compiler detect this? Let’s try this out.</p>
+<!-- more -->
+<p>Create a file with UTF-8 content and then convert it to another
+encoding.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> echo <span class="st">&#39;色は匂へど 散りぬるを 我が世誰ぞ 常ならむ 有為の奥山 今日越えて 浅き夢見じ 酔ひ</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="st">もせず</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="st">&#39;</span> <span class="op">&gt;&gt;</span> test.txt</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> iconv <span class="at">-t</span> SHIFT-JIS test.txt <span class="op">&gt;</span> test-shift-jis.txt</span></code></pre></div>
+<p>Include the shift-jis encoded file in Rust.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> main() <span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="pp">include_str!</span>(<span class="st">&quot;./test-shift-jis.txt&quot;</span>)<span class="op">;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>It turned out that the compiler will yell at us, just as expected.</p>
+<pre><code>$ rustc main.rs
+error: ./test-shift-jis.txt wasn&#39;t a utf-8 file
+ --&gt; main.rs:2:5
+  |
+2 |     include_str!(&quot;./test-shift-jis.txt&quot;);
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: aborting due to previous error</code></pre></main>
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

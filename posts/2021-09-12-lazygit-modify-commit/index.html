@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>Edit Old Commit with Lazygit</title>
+    
+    <meta name="dcterms.created" content="2021-09-12" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">Edit Old Commit with Lazygit</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2021-09-12">2021-09-12</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <main><p>I used to drop right to the shell whenever I needed to edit an old
+commit, be it a silly typo or a missing import I caught before pushing
+to a remote repository. Doing so with the git cli is not hard.</p>
+<!-- more -->
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> log <span class="co"># look up the commit hash to be edited</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> rebase <span class="at">--interactive</span> <span class="st">&#39;abcdef^&#39;</span> <span class="co"># caret means its parent</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># mark the commit as &quot;edit&quot; and apply changes</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">--all</span> <span class="at">--amend</span> <span class="at">--no-edit</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> rebase <span class="at">--continue</span></span></code></pre></div>
+<p>Using <a href="https://github.com/jesseduffield/lazygit">lazygit</a>, the process
+is almost identical.</p>
+<ol type="1">
+<li>Navigate to the commit to be edited and press <code>e</code> (<em>edit commit</em>).</li>
+<li>Stage changes and press <code>A</code> (<em>Amend commit with staged changes</em>).</li>
+<li>Press <code>m</code> (<em>view merge/rebase options</em>) and select <code>continue</code>.</li>
+</ol></main>
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

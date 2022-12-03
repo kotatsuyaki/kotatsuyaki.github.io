@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>Bringing Intelligence to Carcassonne with MCTS</title>
+    
+    <meta name="dcterms.created" content="2021-09-18" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">Bringing Intelligence to Carcassonne with MCTS</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2021-09-18">2021-09-18</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <nav id="TOC" role="doc-toc">
+  <strong>Contents</strong> <label for="contents">⊕</label>
+  <input type="checkbox" id="contents">
+  <ul>
+  <li><a href="#implementing-the-game-logic">Implementing the game logic</a></li>
+  <li><a href="#implementing-the-ui">Implementing the UI</a></li>
+  <li><a href="#applying-mcts-to-carcassonne">Applying MCTS to Carcassonne</a>
+  <ul>
+  <li><a href="#the-stochasticity-problem">The stochasticity problem</a></li>
+  <li><a href="#the-memory-usage-problem">The memory usage problem</a></li>
+  </ul></li>
+  <li><a href="#references">References</a></li>
+  </ul>
+</nav>
+<main><figure>
+<img src="/images/Screenshot_20210918_215801.png" alt="Game interface written with Flutter, a by-product of this project" />
+<figcaption aria-hidden="true">Game interface written with Flutter, a by-product of this
+project</figcaption>
+</figure>
+<p>Last year on an undergraduate course about machine learning, where
+everybody’s got to invent their own topics for the final project, I
+along with my teammate chose to pick up the chance to try if we were
+able to replicate the well-known reinforcement learning algorithm
+AlphaZero for
+<a href="https://en.wikipedia.org/wiki/Carcassonne_(board_game)">Carcassonne</a>,
+the board game we
+loved<span class="sidenote-wrapper"><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle"/><span class="sidenote">Actually
+it’s the game that <strong>I</strong> love. My poor little teammate was forced to
+keep my company on the topic.<br />
+<br />
+</span></span>. Later on, I opted to keep on going for
+new possibilities beyond the conventional configuration of AlphaZero,
+making it the topic of my independent study. This post summarizes what
+I’ve done so far along the journey of exploration, as well as ideas that
+I have yet to actually try.</p>
+<!-- more -->
+<h1 id="implementing-the-game-logic">Implementing the game logic</h1>
+<p>The game logic of Carcassonne is full of enumerating, filtering, and
+flood filling operations. Since the search algorithm hugely benefit from
+fast simulations (we’ll see that later), it was written in Rust instead
+of languages like python.</p>
+<p>The very first implementation of the game logic, included as part of our
+final project last year, has pretty much all the game details hardcoded
+by hand: the edge features of the tiles, the counts, the adjacent castle
+features of the fields, <em>everything</em>. We lived with the hardcoded
+approach since we were running out of time, but recently it has
+undergone a complete rewrite using a better approach - the tile
+configurations are now generated from a much more human-readable CSV
+file using a Python
+script<span class="sidenote-wrapper"><label for="sn-1" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-1" class="margin-toggle"/><span class="sidenote">Using
+an external script to generate Rust code is still not idiomatic, I
+admit. A <a href="https://doc.rust-lang.org/reference/procedural-macros.html">proc
+macro</a> seems
+like a nice fit to this problem. The biggest obstacle right now is that
+proc macros are way harder to debug than my lovely script, so I’m
+sticking to Python at the moment.<br />
+<br />
+</span></span>.</p>
+<figure>
+<img src="/images/Screenshot_20210918_225354.png" alt="The CSV file used to generate boilerplate code" />
+<figcaption aria-hidden="true">The CSV file used to generate boilerplate
+code</figcaption>
+</figure>
+<h1 id="implementing-the-ui">Implementing the UI</h1>
+<p>(There’s a <a href="http://akitaki.ml:5000/">debug version publicly available</a> -
+the url is subject to change)</p>
+<p>For debugging purposes, I’ve been wanting a custom UI for Carcassonne
+for a long time, but it wasn’t until recently that I actually put my
+hands to craft one. Existing projects like
+<a href="https://github.com/farin/JCloisterZone">JCloisterZone</a> are great for
+gameplays, but what I needed was an even simpler UI that I can hook up
+to any backend providing a small set of remote call api.</p>
+<p>The UI was written in Dart using Flutter, with a fairly simple remote
+procedure calling interface as the the means of communication between
+the server and the clients:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode proto"><code class="sourceCode protobuf"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>service GameService {</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    rpc createRoom(CreateRoomRequest) returns (CreateRoomResponse);</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    rpc joinRoom(JoinRoomRequest) returns (JoinRoomResponse);</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    rpc gameState(GameStateRequest) returns (GameStateResponse);</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    rpc doAction(DoActionRequest) returns (Empty);</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>The basic idea is to have the clients perform <a href="https://en.wikipedia.org/wiki/Push_technology#Long_polling">long
+polling</a>
+with the game server. The server holds the incoming requests and
+responds only if:</p>
+<ol type="1">
+<li>The client’s previous state has an serial number older than the
+latest one.</li>
+<li>The server performed a state update.</li>
+</ol>
+<p>To keep it as simple as possible, the states are always synchronized
+fully without any partial updates.</p>
+<h1 id="applying-mcts-to-carcassonne">Applying MCTS to Carcassonne</h1>
+<p>While being the core algorithm of AlphaZero,
+<a href="https://en.wikipedia.org/wiki/Monte_Carlo_tree_search#Principle_of_operation">MCTS</a>
+is actually strikingly simple in its principle. We build a tree that has
+only a root node at the beginning. For an arbitrary number of
+iterations,</p>
+<ol type="1">
+<li>Walk downwards until a leaf node <span class="math inline">\(L\)</span> is hit. At every level, a
+strategy that balances between known good moves and unexplored moves
+is employed to choose our destination.</li>
+<li>Create new leaf nodes for the leaf node we hit, if any.</li>
+<li>Simulate a completely random game from <span class="math inline">\(L\)</span>, generating an outcome
+between 0 and 1, and record this information back to every ancestor
+of <span class="math inline">\(L\)</span>.</li>
+</ol>
+<p>There are some problems though, when it comes to applying this general
+algorithm to Carcassonne.</p>
+<h2 id="the-stochasticity-problem">The stochasticity problem</h2>
+<p>The outline we have just given assumes that between two player actions,
+there are no environment actions (i.e. drawing cards) at all. To solve
+this problem, the search tree is constructed with two kinds of layers of
+nodes:</p>
+<ul>
+<li><strong>Type-D</strong> nodes (D for <strong>deterministic</strong>). The game states
+associated with them are <strong>after</strong> drawing cards.</li>
+<li><strong>Type-U</strong> nodes (U for <strong>undeterministic</strong>). The game states
+associated with them are <strong>before</strong> drawing cards.</li>
+</ul>
+<figure>
+<img src="/images/dutree.svg" alt="The search tree with two types of nodes" />
+<figcaption aria-hidden="true">The search tree with two types of nodes</figcaption>
+</figure>
+<p>As with normal MCTS search trees, we store the number of visits and
+cumulative scores in the nodes. Upon navigating to a node, we perform
+selection using different strategies based on the type of the node. For
+type-D nodes, we use the UCT
+formula<span class="sidenote-wrapper"><label for="sn-2" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-2" class="margin-toggle"/><span class="sidenote"><span class="math inline">\(\frac{w_i}{n_i} + c\sqrt{\frac{\ln N_i}{n_i}}\)</span><br />
+<br />
+</span></span> to select an optimal child node, and
+for type-U nodes, we do a sampling on the remaining cards instead.</p>
+<p>Note that we don’t store the cumulative scores on the type-D nodes. The
+reason for this is that in the UCT formula, when evaluating the score of
+a child node (which must be a <strong>type-U</strong> node), we only need the child’s
+cumulative score <span class="math inline">\(w\)</span>.</p>
+<p>I swear that I came up with this idea on my own, but this turned out to
+be already written in an <a href="https://arxiv.org/abs/2009.12974">existing
+paper</a> about MCTS and Carcassonne that
+I overlooked.</p>
+<h2 id="the-memory-usage-problem">The memory usage problem</h2>
+<p>Unlike Simpler games like gomoku, go, or chess, Carcassonne is much more
+complicated and requires a large amount of memory to hold the game
+states associated with the tree nodes, The situation is even worse on
+cloud servers since the AWS free tier instances have only 1 gigabyte of
+memory - all it takes to trigger oom-killer on these instances is a
+thousand-iteration MCTS search.</p>
+<p>This is actually not always the case though - after applying
+lazy-initialization to the node states (compute and store a new state
+only when it’s selected / sampled), we observed almost 90% drop in
+memory usage.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">enum</span> Data <span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    Determ <span class="op">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>        state<span class="op">:</span> OnceCell<span class="op">&lt;</span><span class="dt">Box</span><span class="op">&lt;</span>Board<span class="op">&gt;&gt;,</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        last_draw<span class="op">:</span> TileKind<span class="op">,</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        visits<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        weight<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span> <span class="co">// for sampling draws</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    Undeterm <span class="op">{</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        state<span class="op">:</span> OnceCell<span class="op">&lt;</span><span class="dt">Box</span><span class="op">&lt;</span>Board<span class="op">&gt;&gt;,</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        last_action<span class="op">:</span> Action<span class="op">,</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        visits<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        value<span class="op">:</span> <span class="dt">f32</span><span class="op">,</span> <span class="co">// for selecting actions</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Above shows the type definition for node data. It fits nicely into a
+sweet sum type provided by the language. Notice how the type of <code>state</code>
+is constructed:</p>
+<ul>
+<li>A <a href="https://lib.rs/crates/once_cell">once-cell</a> is used for lazy
+initialization. Its size in memory depends on the size of the type
+that it wraps.</li>
+<li>A <code>Box</code> is used to reduce the uninitialized size of the cell. Had it
+not been for this pointer indirection, the once-cell would have been
+as large as the <code>Board</code> type, which completely invalidates our goal
+of reducing memory consumption in the first place.</li>
+</ul>
+<figure>
+<img src="/images/indir.svg" alt="Simple indirection may save the day" />
+<figcaption aria-hidden="true">Simple indirection may save the day</figcaption>
+</figure>
+<p>Apart from these small adjustments, the implementation in Rust is pretty
+much a literal translation from the description, which is <a href="https://gitlab.com/Akitaki/carcassonne-rust/-/blob/bdffaaa54db21a8b97037598cdcc44fbcb370179/carcassonne-mcts/src/lib.rs#L34">under 400
+lines of
+code</a>
+in the <code>impl</code> block. Performance-wise, it’s almost on par with average
+human players at around 4000 iterations, which is quite remarkable
+considering the simplicity of the algorithm.</p>
+<p>The code of the project resides in these repositories.</p>
+<ul>
+<li><a href="https://gitlab.com/kotatsuyaki/carcassonne-ui"><code>carcassonne-ui</code></a>
+(the flutter app)</li>
+<li><a href="https://gitlab.com/kotatsuyaki/carcassonne-rust"><code>carcassonne-rust</code></a>
+(the backend part)</li>
+</ul>
+<h1 id="references">References</h1>
+<ul>
+<li><a href="https://arxiv.org/abs/2009.12974"><em>Playing Carcassonne with Monte Carlo Tree
+Search</em></a> paper</li>
+<li><a href="https://en.wikipedia.org/wiki/Monte_Carlo_tree_search">Monte Carlo tree
+search</a> on
+wikipedia</li>
+</ul>
+<hr /></main>
+
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

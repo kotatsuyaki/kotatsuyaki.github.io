@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>Setting up Pi-hole with Wi-Fi AP on Manjaro ARM</title>
+    
+    <meta name="dcterms.created" content="2019-07-20" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">Setting up Pi-hole with Wi-Fi AP on Manjaro ARM</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2019-07-20">2019-07-20</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <main><p>Since the beginning of this summer vacation, my old trusty Raspberry Pi
+3 has been lying around doing nothing. Before that, it has been serving
+as a personal Wi-Fi hotspot in my dorm. Now that I have more free time
+(actually tons of them), I’d like to change the system to my beloved
+distro <a href="https://manjaro.org/">Manjaro Linux</a> and add ad-blocking
+functionality to the hotspot.</p>
+<h1 id="installing-manjaro-arm">Installing Manjaro ARM</h1>
+<p>Installation of Manjaro on the Pi is pretty simple. Head to their
+<a href="https://manjaro.org/download/">download page</a>, click on the ARMv8 tab
+and download either LXQT or minimal image for the Raspberry Pi 3. If
+you’re not afraid of terminal-only usage, I recommend the minimal one
+for simplicity. Use
+<code>dd bs=4M if=Manjaro-ARM-minimal-rpi3-19.06.img of=/dev/sdX conv=fsync</code>
+to write the image onto your micro SD card, then boot the device up. A
+text based setup tool will guide you to configure username, hostname and
+password.</p>
+<!-- more -->
+<h1 id="setting-up-pi-hole">Setting up Pi-hole</h1>
+<p>Since Manjaro, along with other Arch-based distros, is not officially
+supported by Pi-hole, the <a href="https://wiki.archlinux.org/index.php/Pi-hole">Archwiki comes to the
+rescue</a>. Just install it
+from the AUR:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Here I&#39;m using yay as the AUR helper.</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">yay</span> <span class="at">-S</span> pi-hole-ftl pi-hole-server php-sqlite lighttpd php-cgi</span></code></pre></div>
+<p>The building process requires about 10+ minutes on the underpowered
+Raspberry Pi 3. Take a break during this time.</p>
+<p>After the installation is done, stop the service <code>systemd-resolved</code>
+first then enable and start <code>pihole-FTL</code> using <code>systemctl</code>. Using a
+device under the same network to test the DNS server. It should be
+already blocking ads now.</p>
+<h1 id="the-web-interface">The web interface</h1>
+<p>There’s a dedicated web interface for pi hole. It’s optional, but it’s a
+good tool to visualize the queries and log data. First we need to adjust
+settings of PHP. Find and uncomment these lines from <code>/etc/php/php.ini</code>:</p>
+<pre class="conf"><code>extension=pdo_sqlite
+extension=sockets
+extension=sqlite3</code></pre>
+<p>Copy the default lighttpd config file provided by Pi-hole to the right
+place:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> cp /usr/share/pihole/configs/lighttpd.example.conf /etc/lighttpd/lighttpd.conf</span></code></pre></div>
+<p>Restart the <code>lighttpd</code> service, and the web dashboard should be up and
+working now.</p>
+<h1 id="setting-up-the-ap">Setting up the AP</h1>
+<p>My ultimate goal is to use the Pi simultaneously as both ad-blocker
+<strong>and</strong> Wi-Fi access point, so we have to dig into this a little bit.
+Before i was using <a href="https://github.com/oblique/create_ap">create_ap</a> to
+save time configuring all the things to make AP work (since highschool),
+but the AUR helper told me that there’s a package conflict between
+<code>create_ap</code> and <code>pi-hole-ftl</code>. It turns out that since the
+4<sup>th</sup> version of Pi-hole-FTL, they integrated
+a fork of
+<code>dnsmasq</code><span class="sidenote-wrapper"><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle"/><span class="sidenote">Further
+details on <a href="https://docs.pi-hole.net/ftldns/dns-resolver/">what they’ve changed in their
+fork</a>.<br />
+<br />
+</span></span> in their project. Therefore, the
+solution is to install <code>hostapd</code> manually and make use of Pi-hole’s
+built-in DHCP server (which can be enabled from the web interface) to
+assign IPs.</p>
+<p>Install <code>hostapd</code> from the repos:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> pacman <span class="at">-S</span> hostapd</span></code></pre></div>
+<p>Prevent <code>wlan0</code> from being managed by the DHCP client:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> denyinterfaces wlan0 <span class="kw">|</span> <span class="fu">sudo</span> tee <span class="at">-a</span> /etc/dhcpd.conf</span></code></pre></div>
+<p>Next, we should assign a static IP to the <code>wlan0</code> interface. To do this
+on distros with systemd, do the following:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode ini"><code class="sourceCode ini"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /etc/systemd/network/wlan0.network</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">[Match]</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="dt">Name</span><span class="ot">=</span><span class="st">wlan0</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="kw">[Address]</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="dt">Address</span><span class="ot">=</span><span class="st">192.168.50.1/24</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># This address has to match the one in pihole&#39;s DHCP settings page</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="kw">[Network]</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="dt">IPForward</span><span class="ot">=</span><span class="st">ipv4</span></span></code></pre></div>
+<p>Also enable IPv4 forwarding on the ethernet interface:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode ini"><code class="sourceCode ini"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /etc/systemd/network/eth0.network</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">[Match]</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="dt">Name</span><span class="ot">=</span><span class="st">eth0</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="kw">[Network]</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="dt">IPForward</span><span class="ot">=</span><span class="st">ipv4</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="dt">IPMasquerade</span><span class="ot">=</span><span class="kw">yes</span></span></code></pre></div>
+<p>Configure IPTables. This part is taken from <a href="https://qiita.com/mt08/items/ea3a5357c0c9c4ae121b">this
+guide</a>.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Change IPTables rules</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> iptables <span class="at">-t</span> nat <span class="at">-A</span> POSTROUTING <span class="at">-o</span> eth0 <span class="at">-j</span> MASQUERADE</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> iptables <span class="at">-A</span> FORWARD <span class="at">-i</span> eth0 <span class="at">-o</span> wlan0 <span class="at">-m</span> state <span class="at">--state</span> RELATED,ESTABLISHED <span class="at">-j</span> ACCEPT</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> iptables <span class="at">-A</span> FORWARD <span class="at">-i</span> wlan0 <span class="at">-o</span> eth0 <span class="at">-j</span> ACCEPT</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Make them persistent after reboots</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> bash <span class="at">-c</span> <span class="st">&quot;iptables-save &gt; /etc/iptables.ipv4.nat&quot;</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;iptables-restore &lt; /etc/iptables.ipv4.nat&quot;</span> <span class="kw">|</span> <span class="fu">sudo</span> tee /lib/dhcpcd/dhcpcd-hooks/70-ipv4-nat</span></code></pre></div>
+<p>Make a configuration file for hostapd:</p>
+<pre class="conf"><code># /etc/hostapd/hostapd.conf
+interface=wlan0
+driver=nl80211
+hw_mode=g
+channel=6
+ieee80211n=1
+wmm_enabled=1
+ht_capab=[HT40][SHORT-GI-20][DSSS_CCK-40]
+macaddr_acl=0
+auth_algs=1
+ignore_broadcase_ssid=0
+wpa=2
+wpa_key_mgmt=WPA-PSK
+rsn_pairwise=CCMP
+
+# Change these to your desired values.
+# The password must contain more than 8 chars.
+ssid=MyPiAP
+wpa_passphrase=12345678</code></pre>
+<p>Enable the <code>hostapd</code> service and reboot. We now have a ad-blocking Wi-Fi
+AP. It’s been roughly tested for 12 hours now and it’s running
+flawlessly.</p>
+<h1 id="afterword">Afterword</h1>
+<p>The Raspberry Pi 4 <a href="https://www.raspberrypi.org/blog/raspberry-pi-4-on-sale-now-from-35/">is
+released</a>
+for about a month, with up to 4GB of memory and generally better
+hardware. I’m very tempted to buy one, but it’s still not available in
+local stores…</p></main>
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

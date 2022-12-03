@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>Xilinx Vivado on NixOS</title>
+    
+    <meta name="dcterms.created" content="2021-09-14" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">Xilinx Vivado on NixOS</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2021-09-14">2021-09-14</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <main><p><img src="/images/Screenshot_20210917_161801.png" /></p>
+<p>As much as I dislike proprietary stuff, since it’s like a hard
+requirement of the logic design labs course, I have no choice but to get
+Vivado installed on both of my machines. There aren’t many choices when
+it comes to FPGA programming, anyways.</p>
+<p>Fortunately Xilinx provides both Windows and Linux builds, so it’s
+actually possible to run it - with some effort - on non-officially
+supported Linux distros. Some of the guides I’ve seen:</p>
+<!-- more -->
+<ul>
+<li><a href="https://wiki.archlinux.org/title/Xilinx_Vivado">for Arch</a></li>
+<li><a href="https://coldnew.github.io/16cb6a8e/">for Gentoo (in Chinese)</a></li>
+</ul>
+<hr />
+<p>This post summarizes the interactive installation process on NixOS. In
+theory it’s possible to automate most of the process, but here we’ll be
+doing a manual install.</p>
+<ol type="1">
+<li><p>Download <em>Vivado HLx 2020.2: All OS installer Single-File Download</em>.</p>
+<p>This is a huge 43GB tarball that contains all the necessary files.</p>
+<p>Some may prefer the web installer, but my suggestion is to download
+everything altogether. There’re reports of failures occuring during
+the fetching phase of the web installer, and when that happens,
+everything starts from 0 percent again, which is painful.</p></li>
+<li><p>Extract it <code>tar xzvf Xilinx_Unified_2020.2_1118_1232.tar.gz</code></p></li>
+<li><p>Create a <code>shell.nix</code> file for the
+FHS<span class="sidenote-wrapper"><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle"/><span class="sidenote"><a href="https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard">Filesystem
+Hierarchy Standard
+(FHS)</a>
+is the standard directory structure adopted by a large number of
+Linux distributions. NixOS isn’t among one of them, but still
+provides
+<a href="https://nixos.org/manual/nixpkgs/stable/#sec-fhs-environments"><code>buildFHSUserEnv</code></a>
+as an escape hatch to let users run programs that heavily depend on
+the standard.<br />
+<br />
+</span></span> entry.</p></li>
+</ol>
+<div class="sourceCode" id="cb1"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="va">pkgs</span> <span class="op">?</span> <span class="bu">import</span> &lt;nixpkgs&gt; <span class="op">{</span> <span class="op">}</span> <span class="op">}</span>:</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="op">(</span>pkgs.buildFHSUserEnv <span class="op">{</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">name</span> <span class="op">=</span> <span class="st">&quot;vivado-env&quot;</span><span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">targetPkgs</span> <span class="op">=</span> <span class="va">pkgs</span><span class="op">:</span> <span class="op">(</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">with</span> pkgs<span class="op">;</span> <span class="op">[</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>      ncurses5 zlib libuuid</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>      bash coreutils zlib stdenv.cc.cc ncurses</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>      xorg.libXext xorg.libX11 xorg.libXrender xorg.libXtst xorg.libXi xorg.libXft xorg.libxcb xorg.libxcb</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>      freetype fontconfig glib gtk2 gtk3</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>      graphviz gcc unzip nettools</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">]</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="op">);</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="va">runScript</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="st">    env LIBRARY_PATH=/usr/lib \</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="st">      C_INCLUDE_PATH=/usr/include \</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="st">      CPLUS_INCLUDE_PATH=/usr/include \</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="st">      CMAKE_LIBRARY_PATH=/usr/lib \</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="st">      CMAKE_INCLUDE_PATH=/usr/include \</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="st">      bash</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="st">  &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="op">})</span>.env</span></code></pre></div>
+<ol start="4" type="1">
+<li><p>Drop into the FHS environment using <code>nix-shell</code> and switch into the
+extracted directory.</p></li>
+<li><p>Run <code>./xsetup -b ConfigGen</code> and select a product.</p></li>
+<li><p>Go to <code>$HOME/.Xilinx/install_config.txt</code> and edit the config file.
+Destination of the install can be changed there.</p></li>
+<li><p>Install Vivado. This took less than 10 minutes on my machine.</p>
+<pre><code>./xsetup -a XilinxEULA,3rdPartyEULA,WebTalkTerms -b Install -c $HOME/.Xilinx/install_config.txt`</code></pre></li>
+</ol>
+<p>And that’s it. Now update the nix expression to launch vivado directly
+when <code>nix-shell</code> is invoked.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ...</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">runScript</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="st">  env LIBRARY_PATH=/usr/lib \</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="st">    C_INCLUDE_PATH=/usr/include \</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="st">    CPLUS_INCLUDE_PATH=/usr/include \</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="st">    CMAKE_LIBRARY_PATH=/usr/lib \</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="st">    CMAKE_INCLUDE_PATH=/usr/include \</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="st">    $HOME/xilinx/Vivado/2020.2/bin/vivado</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="st">  &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h1 id="update-adding-the-udev-rules">Update: Adding the udev rules</h1>
+<p>To connect to FPGA boards via JTAG, some udev rules are required. The
+udev rules can be found in
+<code>$PREFIX/Vivado/2020.2/data/xicom/cable_drivers/lin64/install_script/install_drivers</code>.
+They also provide some install scripts, but apparently then won’t work
+on NixOS. Instead, just copy the content of the rules, and use the
+<code>writeTextFile</code> trivial builder to package them.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">services</span>.<span class="va">udev</span>.<span class="va">packages</span> <span class="op">=</span> <span class="op">[</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span>pkgs.writeTextFile <span class="op">{</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>      <span class="va">name</span> <span class="op">=</span> <span class="st">&quot;xilinx-dilligent-usb-udev&quot;</span><span class="op">;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>      <span class="va">destination</span> <span class="op">=</span> <span class="st">&quot;/etc/udev/rules.d/52-xilinx-digilent-usb.rules&quot;</span><span class="op">;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>      <span class="va">text</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="st">        ATTR{idVendor}==&quot;1443&quot;, MODE:=&quot;666&quot;</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="st">        ACTION==&quot;add&quot;, ATTR{idVendor}==&quot;0403&quot;, ATTR{manufacturer}==&quot;Digilent&quot;, MODE:=&quot;666&quot;</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="st">      &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span>pkgs.writeTextFile <span class="op">{</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>      <span class="va">name</span> <span class="op">=</span> <span class="st">&quot;xilinx-pcusb-udev&quot;</span><span class="op">;</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>      <span class="va">destination</span> <span class="op">=</span> <span class="st">&quot;/etc/udev/rules.d/52-xilinx-pcusb.rules&quot;</span><span class="op">;</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>      <span class="va">text</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="st">        ATTR{idVendor}==&quot;03fd&quot;, ATTR{idProduct}==&quot;0008&quot;, MODE=&quot;666&quot;</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="st">        ATTR{idVendor}==&quot;03fd&quot;, ATTR{idProduct}==&quot;0007&quot;, MODE=&quot;666&quot;</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="st">        ATTR{idVendor}==&quot;03fd&quot;, ATTR{idProduct}==&quot;0009&quot;, MODE=&quot;666&quot;</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="st">        ATTR{idVendor}==&quot;03fd&quot;, ATTR{idProduct}==&quot;000d&quot;, MODE=&quot;666&quot;</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="st">        ATTR{idVendor}==&quot;03fd&quot;, ATTR{idProduct}==&quot;000f&quot;, MODE=&quot;666&quot;</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="st">        ATTR{idVendor}==&quot;03fd&quot;, ATTR{idProduct}==&quot;0013&quot;, MODE=&quot;666&quot;</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="st">        ATTR{idVendor}==&quot;03fd&quot;, ATTR{idProduct}==&quot;0015&quot;, MODE=&quot;666&quot;</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="st">      &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span>pkgs.writeTextFile <span class="op">{</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>      <span class="va">name</span> <span class="op">=</span> <span class="st">&quot;xilinx-ftdi-usb-udev&quot;</span><span class="op">;</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>      <span class="va">destination</span> <span class="op">=</span> <span class="st">&quot;/etc/udev/rules.d/52-xilinx-ftdi-usb.rules&quot;</span><span class="op">;</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>      <span class="va">text</span> <span class="op">=</span> <span class="st">&#39;&#39;</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="st">        ACTION==&quot;add&quot;, ATTR{idVendor}==&quot;0403&quot;, ATTR{manufacturer}==&quot;Xilinx&quot;, MODE:=&quot;666&quot;</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="st">      &#39;&#39;</span><span class="op">;</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>  <span class="op">];</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h1 id="references">References</h1>
+<ul>
+<li><a href="https://discourse.nixos.org/t/fhs-env-for-installing-xilinx/13150/2">Fhs env for installing
+xilinx</a></li>
+</ul></main>
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

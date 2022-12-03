@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>Running Tensorflow 2.4 on RTX 30 Series with Docker</title>
+    
+    <meta name="dcterms.created" content="2020-12-18" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">Running Tensorflow 2.4 on RTX 30 Series with Docker</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2020-12-18">2020-12-18</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <main><p>Recently I’ve got my hands on a brand-new RTX 3070 GPU to perform
+machine learning tasks. However, the environment setup wasn’t as smooth
+as I expected, due to the hardware being too recent.</p>
+<ul>
+<li>OS: Gentoo Linux X86-64</li>
+<li>GPU: RTX 3070</li>
+</ul>
+<p>Until recently I’ve been using <a href="https://ngc.nvidia.com/catalog/containers/nvidia:tensorflow/tags">the Docker images from Nvidia
+NGC</a>
+exclusively, because they were the only things that actually work,
+without going through the horrible compiling process which takes ages.
+Later on I found that a new stable release TF 2.4 was out, and that it
+seems to support CUDA 11 out-of-the-box.</p>
+<!-- more -->
+<p>Here’s a short note of how to make it work.</p>
+<ol type="1">
+<li><p>Pull the <code>tensorflow/tensorflow:2.4.0-gpu</code> image from Docker hub.</p></li>
+<li><p>Spin up a container with that image:
+<code>docker run -itd --rm --network=host --shm-size 16G --gpus all -v $(pwd):/data/</code></p></li>
+<li><p>Apply temporary fix for <a href="https://github.com/tensorflow/tensorflow/issues/45590">the
+<code>Value 'sm_86' is not defined for option 'gpu-name'</code>
+issue</a>.</p>
+<ul>
+<li>Download <a href="https://developer.download.nvidia.com/compute/cuda/11.1.0/local_installers/cuda_11.1.0_455.23.05_linux.run">CUDA 11.1 installer
+runfile</a>.</li>
+<li><code>chmod +x</code> it.</li>
+<li>Run the runfile with <code>--tar mxvf</code> as the arguments.</li>
+<li>Replace the <code>ptxas</code> binary inside the Docker image (which is
+CUDA 11.0) with the 11.1 version.
+<code>cp $(find . -name 'ptxas') /usr/local/cuda/bin/ptxas</code></li>
+</ul>
+<p>Before this fix, there’s a lot of warning messages like this during
+the trainign process, and the training of the first epoch is hugely
+affected (about 17 seconds, while it should take only 7 seconds).</p>
+<pre><code>Your CUDA software stack is old. We fallback to the NVIDIA driver for some compilation. Update your CUDA version to get the best performance. The ptxas error was: ptxas fatal : Value &#39;sm_86&#39; is not defined for option &#39;gpu-name&#39;</code></pre>
+<p>After applying this hacky fix, the issue seems to be gone.</p></li>
+</ol>
+<h2 id="sources">Sources</h2>
+<ul>
+<li><a href="https://github.com/tensorflow/tensorflow/issues/45590" class="uri">https://github.com/tensorflow/tensorflow/issues/45590</a></li>
+<li><a href="https://github.com/tensorflow/tensorflow/issues/44750" class="uri">https://github.com/tensorflow/tensorflow/issues/44750</a></li>
+<li><a href="https://dobromyslova.medium.com/making-work-tensorflow-with-nvidia-rtx-3090-on-windows-10-7a38e8e582bf" class="uri">https://dobromyslova.medium.com/making-work-tensorflow-with-nvidia-rtx-3090-on-windows-10-7a38e8e582bf</a></li>
+</ul></main>
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

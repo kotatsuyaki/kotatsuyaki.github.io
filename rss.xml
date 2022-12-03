@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"
+    xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel>
+        <title>kotatsuyaki's blog</title>
+        <link>https://blog.kotatsu.dev</link>
+        <description><![CDATA[I jumped through these hoops and wrote about them so that you don't have to.]]></description>
+        <atom:link href="https://blog.kotatsu.dev/rss.xml" rel="self"
+                   type="application/rss+xml" />
+        <lastBuildDate>Sun, 19 Sep 2021 00:00:00 UT</lastBuildDate>
+        <item>
+    <title>Bringing Intelligence to Carcassonne with a Graph Neural Network</title>
+    <link>https://blog.kotatsu.dev/posts/2021-09-19-carcassonne-ai-part-2/index.html</link>
+    <description><![CDATA[My journey towards AlphaZero-style bots for a board game (Part II)]]></description>
+    <pubDate>Sun, 19 Sep 2021 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2021-09-19-carcassonne-ai-part-2/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Bringing Intelligence to Carcassonne with MCTS</title>
+    <link>https://blog.kotatsu.dev/posts/2021-09-18-carcassonne-ai/index.html</link>
+    <description><![CDATA[My journey towards AlphaZero-style bots for a board game (Part I)]]></description>
+    <pubDate>Sat, 18 Sep 2021 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2021-09-18-carcassonne-ai/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Xilinx Vivado on NixOS</title>
+    <link>https://blog.kotatsu.dev/posts/2021-09-14-vivado-on-nixos/index.html</link>
+    <description><![CDATA[<p><img src="/images/Screenshot_20210917_161801.png" /></p>
+<p>As much as I dislike proprietary stuff, since it’s like a hard
+requirement of the logic design labs course, I have no choice but to get
+Vivado installed on both of my machines. There aren’t many choices when
+it comes to FPGA programming, anyways.</p>
+<p>Fortunately Xilinx provides both Windows and Linux builds, so it’s
+actually possible to run it - with some effort - on non-officially
+supported Linux distros. Some of the guides I’ve seen:</p>]]></description>
+    <pubDate>Tue, 14 Sep 2021 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2021-09-14-vivado-on-nixos/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Edit Old Commit with Lazygit</title>
+    <link>https://blog.kotatsu.dev/posts/2021-09-12-lazygit-modify-commit/index.html</link>
+    <description><![CDATA[<p>I used to drop right to the shell whenever I needed to edit an old
+commit, be it a silly typo or a missing import I caught before pushing
+to a remote repository. Doing so with the git cli is not hard.</p>]]></description>
+    <pubDate>Sun, 12 Sep 2021 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2021-09-12-lazygit-modify-commit/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>A Collection of Several shell.nix Files</title>
+    <link>https://blog.kotatsu.dev/posts/2021-08-08-some-shell-files-on-nixos/index.html</link>
+    <description><![CDATA[<p>For a while I’ve been migrating my old codebases to use Nix and
+<a href="https://github.com/target/lorri">lorri</a> to manage dev environments.
+Some advantages I’ve found so far:</p>
+<ul>
+<li>Self-containedness: the development tools are nicely packed with the
+project itself, so no more globally-installed cli tools that are
+only used in one project.</li>
+<li>Multiple versions of the same tool: different projects can use
+different versions of the same package.</li>
+<li>The ability to simply <code>cd</code> into the project directory and have the
+development environment automatically setup (this is made possible
+by <a href="https://github.com/direnv/direnv">direnv</a>).</li>
+</ul>]]></description>
+    <pubDate>Sun, 08 Aug 2021 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2021-08-08-some-shell-files-on-nixos/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Merging Neovim Config into Nix Config</title>
+    <link>https://blog.kotatsu.dev/posts/2021-07-04-vim-config-in-nix/index.html</link>
+    <description><![CDATA[<p>Recently I’ve been slowly migrating my dev environments and old configs,
+which were mainly for use on Gentoo and Void, to
+<a href="https://nixos.org/">NixOS</a>. It turned out that it’s possible to
+integrate my config for Neovim into the Nix config, and it’ll be applied
+to all users (including when using <code>sudo</code>), which is handy. Here’s how:</p>]]></description>
+    <pubDate>Sun, 04 Jul 2021 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2021-07-04-vim-config-in-nix/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>NixOS Quirks and Solutions</title>
+    <link>https://blog.kotatsu.dev/posts/2021-07-04-nixos-quirks-solutions/index.html</link>
+    <description><![CDATA[<p>This page accumulates all the problems I encountered during the
+migration from Gentoo to NixOS, along with the solutions I found.</p>
+<p class="heading" id="install-packages-from-both-stable-and-unstable-channels">Install packages from both stable and unstable channels</p>
+<p>Unlike other distros, its 100% safe to mix packages from different
+channels in one system.</p>]]></description>
+    <pubDate>Sun, 04 Jul 2021 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2021-07-04-nixos-quirks-solutions/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Gentoo Linux on Raspberry Pi 4, Revisited</title>
+    <link>https://blog.kotatsu.dev/posts/2021-02-21-gentoo-on-rpi4-revisited/index.html</link>
+    <description><![CDATA[<p>Information for installing Gentoo on the Pi 4 device is scattered here
+and there in the Gentoo wiki. Two main sources were used as reference
+during the installation.</p>
+<ol start="2" type="1">
+<li><a href="https://wiki.gentoo.org/wiki/Raspberry_Pi_3_64_bit_Install">Raspberry Pi 3 64 Bit
+Install</a>,
+which includes the full installation process, but is for Pi 3
+instead of Pi 4 (they’re quite similar, anyways).</li>
+<li><a href="https://wiki.gentoo.org/wiki/Raspberry_Pi4_64_Bit_Install">Raspberry Pi 4 64 Bit
+Install</a>,
+which includes only the Pi4-specific bits.</li>
+<li><a href="https://www.raspberrypi.org/documentation/linux/kernel/building.md">Official kernel building
+guide</a>
+from the Raspberry Pi Foundation.</li>
+</ol>
+<p>The installation was done from Void Linux, but should work on other
+distros as well. Get the necessary files first.</p>]]></description>
+    <pubDate>Sun, 21 Feb 2021 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2021-02-21-gentoo-on-rpi4-revisited/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>My Personal Collection of Tools</title>
+    <link>https://blog.kotatsu.dev/posts/2021-02-17-my-tools-of-choice/index.html</link>
+    <description><![CDATA[<p>Here’s a list (and hopefully with short descriptions) of the software
+tools I loved and enjoyed, which are all highly subjective. This post
+will be updated if I change my minds (which happens fairly often!), or
+if I discover something new. However, as an extension to the belief that
+<a href="https://www.w3.org/Provider/Style/URI">cool URIs don’t change</a>, cool
+public contents also shouldn’t randomly disappear based on my will.
+Hence, information about tools that I don’t actively use anymore will
+still remain resident here, with a leading mark to emphasize the fact
+that I’m no longer familiar with them.</p>
+<p>As I’ve suggested, my list of tools is extremely biased towards software
+with the following traits.</p>]]></description>
+    <pubDate>Wed, 17 Feb 2021 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2021-02-17-my-tools-of-choice/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Running Tensorflow 2.4 on RTX 30 Series with Docker</title>
+    <link>https://blog.kotatsu.dev/posts/2020-12-18-run-tensorflow-on-rtx-30/index.html</link>
+    <description><![CDATA[<p>Recently I’ve got my hands on a brand-new RTX 3070 GPU to perform
+machine learning tasks. However, the environment setup wasn’t as smooth
+as I expected, due to the hardware being too recent.</p>
+<ul>
+<li>OS: Gentoo Linux X86-64</li>
+<li>GPU: RTX 3070</li>
+</ul>
+<p>Until recently I’ve been using <a href="https://ngc.nvidia.com/catalog/containers/nvidia:tensorflow/tags">the Docker images from Nvidia
+NGC</a>
+exclusively, because they were the only things that actually work,
+without going through the horrible compiling process which takes ages.
+Later on I found that a new stable release TF 2.4 was out, and that it
+seems to support CUDA 11 out-of-the-box.</p>]]></description>
+    <pubDate>Fri, 18 Dec 2020 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2020-12-18-run-tensorflow-on-rtx-30/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Open Tmux Split with Same PWD</title>
+    <link>https://blog.kotatsu.dev/posts/2020-10-23-tmux-open-same-dir/index.html</link>
+    <description><![CDATA[<p>Tmux opens every new split and window with the same working directory
+(usually <code>$HOME</code>). More often and not, this behavior is not desired
+because I’m working on a project residing in a particular directory.
+Here’s the solution. Append the following to <code>tmux.conf</code>.</p>
+<pre><code># Assuming that prefix is C-a...
+
+# Bind C-a u to &quot;new window under same path&quot;
+bind-key u neww -c &#39;#{pane_current_path}&#39;</code></pre>
+<p>For split window, substitute <code>neww</code> for <code>split-window</code>.</p>]]></description>
+    <pubDate>Fri, 23 Oct 2020 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2020-10-23-tmux-open-same-dir/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>The Circle-Ellipse Problem</title>
+    <link>https://blog.kotatsu.dev/posts/2020-10-10-circle-ellipse-problem/index.html</link>
+    <description><![CDATA[<pre><code>Ellipse
+ + strechX(f)
+Circle: Ellipse
+ + strechX(f) &lt;= Does not make sense!</code></pre>
+<p>Suppose that we represent the relationship between circles and ellipses
+using <em>inheritance</em>.</p>
+<ul>
+<li><p>Ellipses is <em>more general</em> in that it’s a superset of the circles.</p></li>
+<li><p>For a ellipse to be a circle, it must have major and minor axes with
+equal lengths, so it’s <em>stricter</em>.</p></li>
+</ul>
+<p>Hence, <code>Circle</code> shoule be a subtype of <code>Ellipse</code>. Now if we proceed to
+add a method <code>Ellipse.stretchX</code>, then since <code>Circle</code> also has this
+problem, it’d change a circle into something that’s no longer a circle,
+since it breaks the invariant of circles mentioned above.</p>]]></description>
+    <pubDate>Sat, 10 Oct 2020 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2020-10-10-circle-ellipse-problem/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Setup Podman on Gentoo Linux</title>
+    <link>https://blog.kotatsu.dev/posts/2020-09-06-gentoo-podman-setup/index.html</link>
+    <description><![CDATA[<p>Recently I wanted to migrate from Docker to rootless podman on my Gentoo
+install, but ended up jumping through multiple loopholes during the
+setup. Simply put, if you’re encountering error messages like this</p>
+<pre><code>Error: container_linux.go:345: starting container process caused &quot;process_linux.go:281: applying cgroup configuration for process caused \&quot;mountpoint for devices not found\&quot;&quot;
+: OCI runtime error</code></pre>
+<p>, then there’s a high chance that there are some essential kernel
+options missing.</p>]]></description>
+    <pubDate>Sun, 06 Sep 2020 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2020-09-06-gentoo-podman-setup/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Difference between include_str and include_bytes</title>
+    <link>https://blog.kotatsu.dev/posts/2020-07-31-include-bytes-include-str-difference/index.html</link>
+    <description><![CDATA[<ul>
+<li><p><a href="https://doc.rust-lang.org/std/macro.include_bytes.html"><code>include_bytes</code></a></p>
+<p>The expression is of type <code>&amp;'static [u8; N]</code>, so non-UTF8 data also
+works.</p></li>
+<li><p><a href="https://doc.rust-lang.org/std/macro.include_str.html"><code>include_str</code></a></p>
+<p>The expression is of type <code>&amp;'static str'</code>, so the file must be UTF-8
+encoded.</p></li>
+</ul>
+<p class="heading" id="what-happens-if-we-include_str-on-non-utf8-files">What happens if we <code>include_str</code> on non-utf8 files?</p>
+<p>Will the Rust compiler detect this? Let’s try this out.</p>]]></description>
+    <pubDate>Fri, 31 Jul 2020 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2020-07-31-include-bytes-include-str-difference/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Completion for GL Crate in Vim</title>
+    <link>https://blog.kotatsu.dev/posts/2020-07-30-vim-coc-rust-gl-completion/index.html</link>
+    <description><![CDATA[<p>Tl;dr you need to enable these two coc config options:</p>
+<ul>
+<li><code>rust-analyzer.cargo.loadOutDirsFromCheck</code></li>
+<li><code>rust-analyzer.procMacro.enable</code></li>
+</ul>
+<hr />
+<p>Earlier in this year I <a href="https://github.com/rust-analyzer/rust-analyzer/issues/3467">filed a issue to
+rust-analyzer</a>
+for completion with crates using build scripts to generate bindings such
+as <code>gl</code>. The support for the
+<code>include!(concat!(env!("OUT_DIR"), "/bindings.rs"))</code> combo landed pretty
+quick within weeks.</p>
+<p>Minimal <code>.vimrc</code> to test it out:</p>
+<pre class="vim"><code>call plug#begin(&#39;~/.vim/plugged&#39;)
+Plug &#39;neoclide/coc.nvim&#39;, {&#39;branch&#39;: &#39;release&#39;}
+call plug#end()
+
+source ~/.cocrc</code></pre>]]></description>
+    <pubDate>Thu, 30 Jul 2020 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2020-07-30-vim-coc-rust-gl-completion/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Reducing Gitlab Page Load Time</title>
+    <link>https://blog.kotatsu.dev/posts/2020-07-29-optimize-gitlab-pages-loadtime/index.html</link>
+    <description><![CDATA[<p>I’ve been migrating the old blog to here for a while. The site is now
+generated using
+<a href="https://www.getzola.org/documentation/getting-started/installation/">Zola</a>
+instead of Hexo, because I’d like to ditch Node.js based tools in favor
+of those written in Rust, and partly just for fun.</p>
+<hr />
+<p class="heading" id="minimize-and-inline-css">Minimize and Inline CSS</p>
+<p>The site is using slightly modified
+<a href="https://github.com/sirodoht/zola-henry">zola-henry</a> theme at the
+moment, which contains just a single CSS file. We first minimize it.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cssnano <span class="op">&lt;</span> henry-full.cs <span class="op">&gt;</span> henry.css</span></code></pre></div>
+<p>Then, modify the theme template to inline the CSS file instead of using
+a <code>&lt;link&gt;</code> tag.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>{% set henry_css = load_data(path=&quot;themes/henry/static/henry.css&quot;) %}</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">&lt;style&gt;</span>{{ henry_css <span class="op">|</span> safe }}<span class="kw">&lt;/style&gt;</span></span></code></pre></div>]]></description>
+    <pubDate>Wed, 29 Jul 2020 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2020-07-29-optimize-gitlab-pages-loadtime/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Extracting template parameters during compile time in C++</title>
+    <link>https://blog.kotatsu.dev/posts/2020-02-13-extract-template-params-cpp/index.html</link>
+    <description><![CDATA[<p>Recently when working on my toy projects, I came across a scenario,
+which can be simplified into the following example. Suppose that we have
+a struct template that looks like this:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="bu">std::</span>size_t<span class="op"> </span>S<span class="op">&gt;</span> <span class="kw">struct</span> Obj <span class="op">{</span> <span class="co">/* ... */</span> <span class="op">};</span></span></code></pre></div>
+<p>It turned out that I also wanted to write a template where the return
+type is dependent on that <code>size_t S</code> template parameter. Yes, this is
+certainly doable, with the help of a custom traits that extracts the
+template parameter. Note that you need a compiler that supports at least
+C++11 or higher for this to work.</p>]]></description>
+    <pubDate>Thu, 13 Feb 2020 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2020-02-13-extract-template-params-cpp/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Setting up Pi-hole with both Wi-Fi AP AND ethernet sharing</title>
+    <link>https://blog.kotatsu.dev/posts/2019-12-19-add-ethernet-pihole/index.html</link>
+    <description><![CDATA[<p>This short note is actually a follow-up of <a href="https://akitaki.gitlab.io/pihole-ap/">this previous
+post</a>. Instead of making a single
+WiFi access point, I wanted it to additionally share Internet access
+using another USB-to-RJ45 adapter (since the built-in ethernet port is
+already used to hook the pi up with the internet). After looking up on
+the net for a while, I found that it’s relatively simple.</p>
+<p>Suppose that you already have the WiFi hotspot from the previous note
+working, then there aren’t much to change. First of all, we need to find
+out the interface name of the ethernet adapter. This can be trivially
+done with the <code>ifconfig</code> command.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="fu">ssh</span><span class="kw">)</span> <span class="ex">akitaki@xbpi</span> : ~</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">[0]</span> % ifconfig <span class="kw">|</span> <span class="fu">grep</span> <span class="st">&#39;^[^ ]*:&#39;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">eth0:</span> flags=4163<span class="op">&lt;</span>UP,BROADCAST,RUNNING,MULTICAST<span class="op">&gt;</span>  mtu 1500</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">eth1:</span> flags=4163<span class="op">&lt;</span>UP,BROADCAST,RUNNING,MULTICAST<span class="op">&gt;</span>  mtu 1500</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">lo:</span> flags=73<span class="op">&lt;</span>UP,LOOPBACK,RUNNING<span class="op">&gt;</span>  mtu 65536</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">wlan0:</span> flags=4163<span class="op">&lt;</span>UP,BROADCAST,RUNNING,MULTICAST<span class="op">&gt;</span>  mtu 1500</span></code></pre></div>]]></description>
+    <pubDate>Thu, 19 Dec 2019 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2019-12-19-add-ethernet-pihole/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Setting up Pi-hole with Wi-Fi AP on Manjaro ARM</title>
+    <link>https://blog.kotatsu.dev/posts/2019-07-20-pihole-ap/index.html</link>
+    <description><![CDATA[<p>Since the beginning of this summer vacation, my old trusty Raspberry Pi
+3 has been lying around doing nothing. Before that, it has been serving
+as a personal Wi-Fi hotspot in my dorm. Now that I have more free time
+(actually tons of them), I’d like to change the system to my beloved
+distro <a href="https://manjaro.org/">Manjaro Linux</a> and add ad-blocking
+functionality to the hotspot.</p>
+<p class="heading" id="installing-manjaro-arm">Installing Manjaro ARM</p>
+<p>Installation of Manjaro on the Pi is pretty simple. Head to their
+<a href="https://manjaro.org/download/">download page</a>, click on the ARMv8 tab
+and download either LXQT or minimal image for the Raspberry Pi 3. If
+you’re not afraid of terminal-only usage, I recommend the minimal one
+for simplicity. Use
+<code>dd bs=4M if=Manjaro-ARM-minimal-rpi3-19.06.img of=/dev/sdX conv=fsync</code>
+to write the image onto your micro SD card, then boot the device up. A
+text based setup tool will guide you to configure username, hostname and
+password.</p>]]></description>
+    <pubDate>Sat, 20 Jul 2019 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2019-07-20-pihole-ap/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Let's Start Emacs (For No Apparent Reason)</title>
+    <link>https://blog.kotatsu.dev/posts/2019-06-24-start-emacs/index.html</link>
+    <description><![CDATA[<p>For a long time, I’ve been sticking to <a href="https://www.vim.org/">vim</a> as my
+primary editor. I tried to integrate as much editing functionalities
+into it as I could. The result turned out to be great, but with the
+growing count of loaded plugins the editor starts to slow down,
+eventually rendering it unusable. Yes, I still input characters at my
+full speed, but the enormous lag of the cursor annoys me <em>a lot</em>.</p>
+<p>On a sunday morning (not sure when) I finally couldn’t withstand the
+sluggish environment and fired up <code>emacs</code>. It’s like “How to exit vim”
+joke but more difficult IMO, with all those cryptic key bindings and
+commands.</p>]]></description>
+    <pubDate>Mon, 24 Jun 2019 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2019-06-24-start-emacs/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+<item>
+    <title>Using Wordpress REST API to bulk post</title>
+    <link>https://blog.kotatsu.dev/posts/2019-04-23-wordpress-rest-bulk-post/index.html</link>
+    <description><![CDATA[<p>Recently on one of the courses I enrolled, the professor assigned a
+homework (which takes part in my <strong>midterm grade</strong>) that involves
+posting massive amount of code onto a wordpress site.</p>]]></description>
+    <pubDate>Tue, 23 Apr 2019 00:00:00 UT</pubDate>
+    <guid>https://blog.kotatsu.dev/posts/2019-04-23-wordpress-rest-bulk-post/index.html</guid>
+    <dc:creator>kotatsuyaki (Ming-Long Huang)</dc:creator>
+</item>
+
+    </channel>
+</rss>

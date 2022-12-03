@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>Setting up Pi-hole with both Wi-Fi AP AND ethernet sharing</title>
+    
+    <meta name="dcterms.created" content="2019-12-19" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">Setting up Pi-hole with both Wi-Fi AP AND ethernet sharing</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2019-12-19">2019-12-19</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <main><p>This short note is actually a follow-up of <a href="https://akitaki.gitlab.io/pihole-ap/">this previous
+post</a>. Instead of making a single
+WiFi access point, I wanted it to additionally share Internet access
+using another USB-to-RJ45 adapter (since the built-in ethernet port is
+already used to hook the pi up with the internet). After looking up on
+the net for a while, I found that it’s relatively simple.</p>
+<p>Suppose that you already have the WiFi hotspot from the previous note
+working, then there aren’t much to change. First of all, we need to find
+out the interface name of the ethernet adapter. This can be trivially
+done with the <code>ifconfig</code> command.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="fu">ssh</span><span class="kw">)</span> <span class="ex">akitaki@xbpi</span> : ~</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">[0]</span> % ifconfig <span class="kw">|</span> <span class="fu">grep</span> <span class="st">&#39;^[^ ]*:&#39;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">eth0:</span> flags=4163<span class="op">&lt;</span>UP,BROADCAST,RUNNING,MULTICAST<span class="op">&gt;</span>  mtu 1500</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">eth1:</span> flags=4163<span class="op">&lt;</span>UP,BROADCAST,RUNNING,MULTICAST<span class="op">&gt;</span>  mtu 1500</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">lo:</span> flags=73<span class="op">&lt;</span>UP,LOOPBACK,RUNNING<span class="op">&gt;</span>  mtu 65536</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">wlan0:</span> flags=4163<span class="op">&lt;</span>UP,BROADCAST,RUNNING,MULTICAST<span class="op">&gt;</span>  mtu 1500</span></code></pre></div>
+<!-- more -->
+<p>Okay, so in my case, the name of the new interface is <code>eth1</code>. We then
+proceed to prevent this device from being controlled by the DHCP client.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> denyinterfaces eth1 <span class="kw">|</span> <span class="fu">sudo</span> tee <span class="at">-a</span> /etc/dhcpd.conf</span></code></pre></div>
+<p>Then, make adjustments to IPTables. In this part, <code>eth0</code> and <code>eth1</code> are
+the source and destination interface, respectively.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Setup rules</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> iptables <span class="at">-t</span> nat <span class="at">-A</span> POSTROUTING <span class="at">-o</span> eth0 <span class="at">-j</span> MASQUERADE</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> iptables <span class="at">-A</span> FORWARD <span class="at">-i</span> eth0 <span class="at">-o</span> eth1 <span class="at">-m</span> state <span class="at">--state</span> RELATED,ESTABLISHED <span class="at">-j</span> ACCEPT</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> iptables <span class="at">-A</span> FORWARD <span class="at">-i</span> eth1 <span class="at">-o</span> eth0 <span class="at">-j</span> ACCEPT</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Write to disk</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> bash <span class="at">-c</span> <span class="st">&quot;iptables-save &gt; /etc/iptables.ipv4.nat&quot;</span></span></code></pre></div>
+<p>We need to setup the built-in DHCP server that comes with Pi-hole such
+that there are two gateways, one for WiFi AP and the other for ethernet
+sharing. A quick search shows that <a href="https://stackoverflow.com/questions/29453522/how-to-specify-two-or-more-gateways-in-dnsmasq">shows that this is absolutely doable
+with
+dnsmasq</a>
+using the optional <code>set:&lt;tag&gt;</code> syntax which lets us to specify labels on
+a per-network basis. Since there isn’t integrated support for this in
+the web admin page provided by Pi-hole, we must manually edit the
+underlying config file. Change the contents of
+<code>/etc/dnsmasq.d/02-pihole-dhcp.conf</code> to something like the following:</p>
+<pre><code>###############################################################################
+#  DHCP SERVER CONFIG FILE AUTOMATICALLY POPULATED BY PI-HOLE WEB INTERFACE.  #
+#            ANY CHANGES MADE TO THIS FILE WILL BE LOST ON CHANGE             #
+###############################################################################
+dhcp-authoritative
+dhcp-range=set:tag0,192.168.42.201,192.168.42.251,24h
+dhcp-range=set:tag1,192.168.52.201,192.168.52.251,24h
+dhcp-option=tag:tag0,option:router,192.168.42.1
+dhcp-option=tag:tag1,option:router,192.168.52.1
+dhcp-leasefile=/etc/pihole/dhcp.leases
+#quiet-dhcp
+
+domain=lan</code></pre>
+<p>In this example, we’re assigning <code>192.168.42.~</code> and <code>192.168.52.~</code> to
+clients connecting from WiFi AP and ethernet, respectively. Notice that
+this file may be overwritten by Pi-hole again if you fiddle with the
+admin panel, so you’d like to make a backup of this file in case it’s
+lost.</p>
+<p>Also add a new systemd network configuration for <code>eth1</code> to reflex this
+change.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode ini"><code class="sourceCode ini"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /etc/systemd/network/eth1.network</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">[Match]</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="dt">Name</span><span class="ot">=</span><span class="st">eth1</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">[Network]</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="dt">Address</span><span class="ot">=</span><span class="st">192.168.52.1/24</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="dt">IPForward</span><span class="ot">=</span><span class="st">ipv4</span></span></code></pre></div>
+<p>After a reboot, all things should be working fine now.</p></main>
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

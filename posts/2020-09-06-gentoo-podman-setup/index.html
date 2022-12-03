@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>Setup Podman on Gentoo Linux</title>
+    
+    <meta name="dcterms.created" content="2020-09-06" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">Setup Podman on Gentoo Linux</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2020-09-06">2020-09-06</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <main><p>Recently I wanted to migrate from Docker to rootless podman on my Gentoo
+install, but ended up jumping through multiple loopholes during the
+setup. Simply put, if you’re encountering error messages like this</p>
+<pre><code>Error: container_linux.go:345: starting container process caused &quot;process_linux.go:281: applying cgroup configuration for process caused \&quot;mountpoint for devices not found\&quot;&quot;
+: OCI runtime error</code></pre>
+<p>, then there’s a high chance that there are some essential kernel
+options missing.</p>
+<!-- more -->
+<p>First, re-configure the kernel in order to support <code>runc</code>.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /usr/src/linux</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> menuconfig</span></code></pre></div>
+<p>Use
+<a href="https://github.com/opencontainers/runc/blob/master/script/check-config.sh"><code>check-config.sh</code></a>
+as a reference to check whether all needed flags are set. Note that
+<code>CONFIG_NF_NAT_IPV4</code> and <code>CONFIG_NETFILTER_XT_MATCH_IPVS</code> aren’t present
+in kernel 5.4 anymore, so just ignore them being in <code>missing</code> state.</p>
+<p>Recompile and install the kernel. You should be very confortable doing
+this now.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> <span class="at">-j2</span><span class="kw">;</span> <span class="fu">sudo</span> make modules_install<span class="kw">;</span> <span class="fu">sudo</span> make install</span></code></pre></div>
+<p>Now emerge the <code>libpod</code> package. You may need to <a href="https://wiki.gentoo.org/wiki/Knowledge_Base:Unmasking_a_package">unmask some
+packages</a>:</p>
+<pre><code># /etc/portage/package.accept_keywords
+app-emulation/conmon ~amd64
+app-emulation/libpod ~amd64
+app-emulation/slirp4netns ~amd64
+sys-fs/fuse-overlayfs ~amd64
+
+# Emerge the package
+sudo emerge -avq app-emulation/libpod</code></pre>
+<p>Reboot and Podman should now be working.</p>
+<p>Source: <a href="https://wiki.gentoo.org/wiki/Libpod" class="uri">https://wiki.gentoo.org/wiki/Libpod</a></p></main>
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

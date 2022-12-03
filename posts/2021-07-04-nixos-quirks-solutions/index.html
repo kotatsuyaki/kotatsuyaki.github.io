@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>NixOS Quirks and Solutions</title>
+    
+    <meta name="dcterms.created" content="2021-07-04" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">NixOS Quirks and Solutions</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2021-07-04">2021-07-04</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <main><p>This page accumulates all the problems I encountered during the
+migration from Gentoo to NixOS, along with the solutions I found.</p>
+<h1 id="install-packages-from-both-stable-and-unstable-channels">Install packages from both stable and unstable channels</h1>
+<p>Unlike other distros, its 100% safe to mix packages from different
+channels in one system.</p>
+<!-- more -->
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> sudo nix-channel <span class="at">--add</span> https://nixos.org/channels/nixos-unstable nixos-unstable</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> sudo nix-channel <span class="at">--update</span> nixos-unstable</span></code></pre></div>
+<p>Now in the configuration file, import <code>&lt;nixos-unstable&gt;</code> and use it as
+one would do for the default channel:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span> <span class="va">config</span><span class="op">,</span> <span class="va">pkgs</span><span class="op">,</span> <span class="op">...</span> <span class="op">}</span>:</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">unstable</span> <span class="op">=</span> <span class="bu">import</span> &lt;nixos<span class="op">-</span>unstable&gt; <span class="op">{</span> <span class="op">};</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="va">environment</span>.<span class="va">systemPackages</span> <span class="op">=</span> <span class="kw">with</span> pkgs<span class="op">;</span> <span class="op">[</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    unstable.neovim</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">];</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h1 id="overriding-the-dns-server">Overriding the DNS server</h1>
+<p>The first option I found was
+<a href="https://search.nixos.org/options?channel=21.05&amp;show=networking.nameservers&amp;from=0&amp;size=50&amp;sort=relevance&amp;query=nameserver"><code>networking.nameservers</code></a>,
+but adding</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">networking</span>.<span class="va">nameservers</span> <span class="op">=</span> <span class="op">[</span> <span class="st">&quot;8.8.8.8&quot;</span> <span class="st">&quot;8.8.4.4&quot;</span> <span class="op">];</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>to the config didn’t work for me, because it generates <code>resolv.conf</code>
+with the Google nameservers <em>appended</em> after the local DNS server, which
+is not what I wanted:</p>
+<pre class="conf"><code># Generated by resolvconf
+nameserver 192.168.0.1
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+options edns0</code></pre>
+<p>It turned out that since NixOS defaults to using NetworkManager under
+the hood,
+<a href="https://search.nixos.org/options?channel=21.05&amp;show=networking.networkmanager.insertNameservers&amp;from=0&amp;size=50&amp;sort=relevance&amp;query=nameserver"><code>networking.networkmanager.insertNameservers</code></a>
+is the correct option, since it says “a list of name servers that should
+be <em>inserted before the ones</em> configured in NetworkManager or received
+by DHCP”. Apply it like this.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode nix"><code class="sourceCode nix"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">networking</span>.<span class="va">networkmanager</span>.<span class="va">insertNameservers</span> <span class="op">=</span> <span class="op">[</span> <span class="st">&quot;8.8.8.8&quot;</span> <span class="st">&quot;8.8.4.4&quot;</span> <span class="op">];</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h1 id="running-appimage">Running AppImage</h1>
+<p>Some applications are packaged in the <a href="https://appimage.org/">AppImage</a>
+format, which claims to be <em>Linux apps that run anywhere</em>. However due
+to the weird (in a good sense) way Nix works, linkers and dynamic
+libraries that are normally assumed to be present at certain paths are
+missing, causing troubles when one tries to execute an AppImage file.</p>
+<p>I’ve found two solutions to this so far:</p>
+<ol type="1">
+<li><p>Use
+<a href="https://search.nixos.org/packages?channel=21.05&amp;show=appimage-run&amp;from=0&amp;size=50&amp;sort=relevance&amp;query=appimage"><code>appimage-run</code></a>.
+Install it (locally or globally) and , for example, do</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> appimage-run Netron-5.0.1.AppImage</span></code></pre></div></li>
+<li><p>Create a derivation using
+<a href="https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-appimageTools">appimageTools</a>.
+Beware that this is still an unstable API.</p></li>
+</ol>
+<h1 id="accessing-executable-installed-from-shell.nix-via-emacs-tramp">Accessing executable installed from <code>shell.nix</code> via Emacs TRAMP</h1>
+<p>This must be the least supported configuration in the world.</p>
+<ul>
+<li>I’m using <a href="https://github.com/target/lorri">lorri</a> to create
+per-project nix environment. On different projects, different LSP
+servers are used, so I’m not willing to install them globally in the
+system configuration.</li>
+<li>It’s on a remote host, and I use <a href="https://www.emacswiki.org/emacs/TrampMode">Emacs
+TRAMP</a> to access it from
+another host.</li>
+<li>I’m using <a href="https://emacs-lsp.github.io/lsp-mode/">lsp-mode</a> for
+autocomplete etc.</li>
+</ul>
+<p>These three combined together created a hassle, since if I install
+<code>python-language-server</code> from my project’s <code>shell.nix</code>, my Emacs can’t
+see the <code>pyls</code> executable via TRAMP. No matter how I poked around the
+<code>tramp-remote-path</code> variable,
+<code>(executable-find "pyls" "/ssh:hostname:")</code> always returns <code>nil</code>.</p>
+<p>The only dirty solution I found is to symlink the LSP server executable
+to the project’s root directory:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ln <span class="at">-s</span> <span class="va">$(</span><span class="fu">which</span> pyls<span class="va">)</span> pyls</span></code></pre></div>
+<h1 id="searching-options-from-commandline">Searching options from commandline</h1>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> man configuration.nix</span></code></pre></div>
+<p>If network connection is available, then just go to
+https://search.nixos.org/options for them.</p></main>
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

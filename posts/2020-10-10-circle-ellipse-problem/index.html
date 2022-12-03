@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>The Circle-Ellipse Problem</title>
+    
+    <meta name="dcterms.created" content="2020-10-10" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">The Circle-Ellipse Problem</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2020-10-10">2020-10-10</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <main><pre><code>Ellipse
+ + strechX(f)
+Circle: Ellipse
+ + strechX(f) &lt;= Does not make sense!</code></pre>
+<p>Suppose that we represent the relationship between circles and ellipses
+using <em>inheritance</em>.</p>
+<ul>
+<li><p>Ellipses is <em>more general</em> in that it’s a superset of the circles.</p></li>
+<li><p>For a ellipse to be a circle, it must have major and minor axes with
+equal lengths, so it’s <em>stricter</em>.</p></li>
+</ul>
+<p>Hence, <code>Circle</code> shoule be a subtype of <code>Ellipse</code>. Now if we proceed to
+add a method <code>Ellipse.stretchX</code>, then since <code>Circle</code> also has this
+problem, it’d change a circle into something that’s no longer a circle,
+since it breaks the invariant of circles mentioned above.</p>
+<!-- more -->
+<p>Possible solutions include:</p>
+<ul>
+<li><p>Return success / failure status, or throw exceptions.</p></li>
+<li><p>Allow <code>Circle.strechX</code> to change <span class="math inline">\(x\)</span> and <span class="math inline">\(y\)</span> at the same time (i.e.
+weaken the contract).</p></li>
+<li><p>Cast to parent class <code>Ellipse</code>.</p></li>
+<li><p>Return streched shape (the functional approach).</p></li>
+<li><p>Introduce new subtype <code>MutableEllipse</code> (i.e. factor out modifiers)</p></li>
+<li><p>Introduce new abstract base class <code>EllipseOrCircle</code>.</p></li>
+</ul>
+<p>In we may think that a circle <strong>is-an</strong> ellipse, which also applies to
+the person-prisoner case.</p>
+<pre><code>Person
+ + walkNorth(i)
+Prisoner: Person
+ + walkNorth(i) &lt;= Does not make sense!</code></pre>
+<p>Now if we decide to rename <code>Person</code> to <code>FreePerson</code>, then it’s clear
+that a prisoner is <strong>not</strong> a free person. The inheritance makes no
+sense. This tells us that inheritance shouldn’t be used when the
+<strong>subtype has restrictions on the freedom</strong> assumed in the base class.,
+which is exactly why many people advocate to “prefer composition over
+inheritance”.</p></main>
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

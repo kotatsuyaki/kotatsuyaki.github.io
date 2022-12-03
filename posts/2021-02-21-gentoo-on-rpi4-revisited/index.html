@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>Gentoo Linux on Raspberry Pi 4, Revisited</title>
+    
+    <meta name="dcterms.created" content="2021-02-21" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">Gentoo Linux on Raspberry Pi 4, Revisited</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2021-02-21">2021-02-21</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <main><p>Information for installing Gentoo on the Pi 4 device is scattered here
+and there in the Gentoo wiki. Two main sources were used as reference
+during the installation.</p>
+<ol start="2" type="1">
+<li><a href="https://wiki.gentoo.org/wiki/Raspberry_Pi_3_64_bit_Install">Raspberry Pi 3 64 Bit
+Install</a>,
+which includes the full installation process, but is for Pi 3
+instead of Pi 4 (they’re quite similar, anyways).</li>
+<li><a href="https://wiki.gentoo.org/wiki/Raspberry_Pi4_64_Bit_Install">Raspberry Pi 4 64 Bit
+Install</a>,
+which includes only the Pi4-specific bits.</li>
+<li><a href="https://www.raspberrypi.org/documentation/linux/kernel/building.md">Official kernel building
+guide</a>
+from the Raspberry Pi Foundation.</li>
+</ol>
+<p>The installation was done from Void Linux, but should work on other
+distros as well. Get the necessary files first.</p>
+<!-- more -->
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> git clone <span class="at">-b</span> stable <span class="at">--depth</span> 1 https://github.com/raspberrypi/firmware</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> git clone <span class="at">-b</span> rpi-5.10.y <span class="at">--depth</span> 1 https://github.com/raspberrypi/linux</span></code></pre></div>
+<h1 id="kernel">Kernel</h1>
+<p>We’re going to compile the kernel with a cross-compile toolchain. On
+Void the <code>cross-aarch64-linux-gnu</code> package from XBPS would suffice. The
+<code>CROSS_COMPILE</code> environment variable in the following commands would
+depend on the host distribution we’re building the kernel from, and may
+need changes.</p>
+<p>Inside the <code>linux</code> directory, load the default vendor configuration
+first.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make bcm2711_defconfig</span></code></pre></div>
+<p>One config entry that’s recommended to be tweaked is
+<code>CPU_FREQ_DEFAULT_GOV</code>, which defaults to staying on the lowest possible
+frequency pernamently. Fire up <code>make nconfig</code>, search for it, and set
+the value to <code>ondemand</code> instead. Now compile the kernel.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make <span class="st">&quot;-j</span><span class="va">$(</span><span class="fu">nproc</span><span class="va">)</span><span class="st">&quot;</span></span></code></pre></div>
+<h1 id="partition-and-fs">Partition and FS</h1>
+<p>Use your favorite tool (I recommend <code>cfdisk</code> or <code>fdisk</code>) to partition
+the SD card. The first partition should be bootable vfat primary
+partition. An example output of <code>fdisk</code> looks like this.</p>
+<pre><code>Device         Boot  Start       End   Sectors  Size Id Type
+/dev/mmcblk0p1 *      2048    526335    524288  256M  b W95 FAT32
+/dev/mmcblk0p2      526336 125042687 124516352 59.4G 83 Linux</code></pre>
+<p>Format the first partition as FAT32 (don’t forget that <code>-F 32</code>!).</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> sudo mkfs.vfat <span class="at">-F</span> 32 /dev/mmcblk0p1</span></code></pre></div>
+<p>As for the rootfs, originally I thought using
+<a href="https://en.wikipedia.org/wiki/F2FS">F2FS</a> may be a great idea since
+it’s specifically designed for flash memory-based devices including SD
+cards. However, it seems that <a href="https://www.kevinwlocke.com/bits/2018/04/28/rpi-sd-card-storage-considerations/#f2fs">F2FS doesn’t handle power outages
+well</a>,
+so eventually I still went for the classical ext4. Both journaling and
+CRC32C metadata checksuming are enabled here to make it more robust
+against corruptions. <code>-i 8192</code> to create an inode for every two 4KB
+blocks.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> sudo mkfs.ext4 <span class="at">-i</span> 8192 <span class="at">-O</span> has_journal,metadata_csum /dev/mmcblk0p2</span></code></pre></div>
+<h1 id="installation">Installation</h1>
+<p>Now mount both the rootfs and boot partition. I’ll call them
+<code>/mnt/rpigentoo</code> and <code>/mnt/rpigentoo/boot</code>. Download stage3 tarball as
+usual and then unpack it inside the rootfs.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> links <span class="st">&#39;https://www.gentoo.org/downloads/mirrors/&#39;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> <span class="co"># Choose a mirror, navigate to latest stage3-arm64 tarball, press `d` and wait</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> sudo tar xpvf stage3-<span class="pp">*</span>.tar.xz <span class="dt">\</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">--xattrs-include</span><span class="op">=</span><span class="st">&#39;*.*&#39;</span> <span class="at">--numeric-owner</span> <span class="dt">\</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">-C</span> /mnt/rpigentoo</span></code></pre></div>
+<p>Install the Portage tree.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> curl <span class="at">-LO</span> <span class="st">&#39;http://distfiles.gentoo.org/snapshots/portage-latest.tar.bz2&#39;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> tar xvpf portage-latest.tar.bz2 <span class="at">--strip-components</span><span class="op">=</span>1 <span class="dt">\</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">-C</span> /mnt/rpigentoo/var/db/repos/gentoo</span></code></pre></div>
+<p>Install the kernel. All kernel images present before installtion should
+be removed beforehand to ensure that the device actually boot with
+<code>kernel8.img</code>. The firmware will happily load the 32-bit <code>kernel7.img</code>
+by default, so this is necessary.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> sudo rm /mnt/rpigentoo/boot/kernel<span class="pp">*</span>.img</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> sudo cp arch/arm64/boot/Image /mnt/rpigentoo/boot/kernel8.img</span></code></pre></div>
+<p>Install the firmware. Copy content of <code>/boot/</code> from the firmware
+repository directly.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> sudo cp <span class="at">-rv</span> firmware/boot/<span class="pp">*</span> /mnt/rpigentoo/boot/</span></code></pre></div>
+<p>Install the device tree.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> sudo cp <span class="at">-v</span> arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dtb <span class="dt">\</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    /mnt/rpigentoo/boot/</span></code></pre></div>
+<p>The Gentoo wiki suggests to also install fresh copy of device tree
+overlays from the kernel repository, while the firmware we’ve just
+installed already include them. Their SHA1 digests seem to be identical,
+so this step was skipped.</p>
+<h1 id="configurations-before-boot">Configurations before Boot</h1>
+<p>Of course we need <code>/mnt/rpigentoo/etc/fstab</code>.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode txt"><code class="sourceCode default"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>/dev/mmcblk0p1 /boot vfat noauto,noatime 1 2</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>/dev/mmcblk0p2 / ext4 defaults,noatime 0 1</span></code></pre></div>
+<p>And for the Pi to boot properly we need <code>cmdline.txt</code> and <code>config.txt</code>.</p>
+<pre><code># cmdline.txt
+root=/dev/mmcblk0p2 rootfstype=ext4 console=tty1 fsck.repair=yes rootwait
+# config.txt
+disable_overscan=1
+hdmi_drive=2</code></pre>
+<h1 id="additional-get-online">Additional: Get Online</h1>
+<ul>
+<li><p>Ethernet</p>
+<p>For ethernet, no additional firmware is needed, but unfortunately
+the conventional <code>dhcpcd</code> isn’t present in the stage 3 tarball.
+Busybox comes to the rescue.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> busybox udhcpc <span class="at">-i</span> eth0</span></code></pre></div>
+<p>One may be tempted to install dhcpcd at this point, but <code>emerge</code>
+exploded with some cryptic
+<code>TypeError: 'NoneType' object is not iterable</code> messages. It turned
+out to be triggered by wrong system datetime, since the Pi lacks an
+RTC. Use <code>date --set yyyy-mm-dd</code> to manually adjust datetime and it
+worked.</p></li>
+<li><p>WiFi</p>
+<p>Additional firmware needed. The firmware files resides in the
+<code>sys-firmware/raspberrypi-wifi-ucode</code> package, but some files inside
+it conflicts with <code>kernel/linux-firmware</code>. The Gentoo Wiki suggests
+to</p>
+<ol type="1">
+<li>(Re-)emerge <code>linux-firmware</code> with <code>savedconfig</code> USE flag set.</li>
+<li>Comment out several broadcom-related files from
+<code>/etc/portage/savedconfig/sys-kernel/linux-firmware-*</code>.</li>
+</ol>
+<div class="sourceCode" id="cb15"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> for name in brcmfmac43430 brcmfmac43436 brcmfmac43455 brcmfmac43456 <span class="dt">\</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  do <span class="dt">\</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>      sed <span class="at">-i</span> <span class="st">&#39;/www/ s/^#*/#/&#39;</span> <span class="st">&quot;</span><span class="va">$name</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  done</span></code></pre></div>
+<ol start="3" type="1">
+<li>Re-emerge <code>linux-firmware</code>.</li>
+<li>Finally emerge <code>raspberr-wifi-ucode</code></li>
+</ol>
+<p>After a reboot <code>wlan0</code> shows up in <code>ip -a</code> output.</p></li>
+</ul>
+<!-- Enforce line length limit -->
+<!-- vim: set colorcolumn=80: --></main>
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

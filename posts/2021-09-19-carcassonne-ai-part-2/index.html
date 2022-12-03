@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>Bringing Intelligence to Carcassonne with a Graph Neural Network</title>
+    
+    <meta name="dcterms.created" content="2021-09-19" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">Bringing Intelligence to Carcassonne with a Graph Neural Network</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2021-09-19">2021-09-19</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <nav id="TOC" role="doc-toc">
+  <strong>Contents</strong> <label for="contents">⊕</label>
+  <input type="checkbox" id="contents">
+  <ul>
+  <li><a href="#from-mcts-to-alphazero">From MCTS to AlphaZero</a></li>
+  <li><a href="#from-cnn-to-gnn">From CNN to GNN</a>
+  <ul>
+  <li><a href="#why-gnn">Why GNN?</a></li>
+  <li><a href="#background-graph-neural-networks">Background: Graph neural networks</a></li>
+  <li><a href="#designing-a-gnn-for-carcassonne">Designing a GNN for Carcassonne</a></li>
+  </ul></li>
+  <li><a href="#closing-thoughts">Closing thoughts</a></li>
+  <li><a href="#appendix-for-rants-deep-learning-and-rust">Appendix for rants: Deep learning and Rust</a></li>
+  </ul>
+</nav>
+<main><p><em>2021/10/04 update: Rust-C++ interop with the cxx crate</em></p>
+<p>In <a href="/carcassonne-ai">my previous post</a>, I shared about how I learned and
+attempted to use simple MCTS algorithm to solve the board game
+Carcassonne This post is a follow-up of that, where I’d like to talk
+about how I applied the AlphaZero (and beyond!) model on the same game.</p>
+<!-- more -->
+<p>Parts of this article were originally collected from my private notes
+and commit logs, so expect it to be a little bit long and inconsistent.</p>
+<h1 id="from-mcts-to-alphazero">From MCTS to AlphaZero</h1>
+<p>From an algorithmic point of view, the difference between simple MCTS
+and AlphaZero is almost negligible.</p>
+<ol type="1">
+<li><p>There’s no more random simulations. Instead of using simulations to
+estimate the outcome in <code>[0, 1]</code>, a <em>value
+network</em><span class="sidenote-wrapper"><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle"/><span class="sidenote">In
+practice, the policy network and the value network are always tied
+together, sharing a large portion of the layers. I see this as a
+basic form of regularization - since the weights are tied, the
+network could be restricted to learn more useful information that
+affects both the scoring and policy.<br />
+<br />
+</span></span> is used to do the same job.</p></li>
+<li><p>The selection formulae are different. AlphaZero uses a variant
+called PUCT, which looks like this.</p>
+<p><span class="math display">\[Q(s, a) + c_{\text{puct}}P(s, s&#39;) \frac{\sum_x N(s, x)}{1 + N(s, s&#39;)}\]</span></p>
+<p>The first term remains the same as UCT, which is the average value
+so far for the node. The second term incorporates <span class="math inline">\(P\)</span>, which is the
+policy prior obtained by feeding the game state <span class="math inline">\(s\)</span> into another
+network called the <em>policy
+network</em><span class="sidenote-wrapper"><label for="sn-1" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-1" class="margin-toggle"/><span class="sidenote">In
+practice, the policy network and the value network are always tied
+together, sharing a large portion of the layers. I see this as a
+basic form of regularization - since the weights are tied, the
+network could be restricted to learn more useful information that
+affects both the scoring and policy.<br />
+<br />
+</span></span>.</p></li>
+</ol>
+<p>The largest challenge involved in implementing AlphaZero though, is that
+the number of inferences (forward passes on the neural networks)
+required is fairly large. Even for the simplest games like
+five-in-a-row, over ten thousand game matches is required to train the
+model to an acceptable level of strength, which translates to millions
+times of forward passes. The approach I adopted was to have a large
+number of selfplay threads running and sending the inference requests to
+a single “inference service” thread for the neural network. The
+inference service thread waits for a fixed number of requests to fill a
+batch before running an inference - this is critical to avoid I/O
+overhead introduced by transferring data between the CPU and GPU.</p>
+<figure>
+<img src="/images/batch.svg" alt="My poor man’s single-machine AlphaZero architecture" />
+<figcaption aria-hidden="true">My poor man’s single-machine AlphaZero
+architecture</figcaption>
+</figure>
+<h1 id="from-cnn-to-gnn">From CNN to GNN</h1>
+<h2 id="why-gnn">Why GNN?</h2>
+<p>The previous section pretty much sums up what I did for the final
+project last year - it successfully achieved slightly better performance
+compared to simple MCTS algorithm, but with some caveats.</p>
+<ol type="1">
+<li><p>3-dimensional tensors are actually not the most suitable format to
+represent the game states of Carcassonne. Sure, we one-hot encoded
+the tile kinds, the rotations, along with the occupation information
+to it, but there’s no guarantee that the CNN will be able to easily
+learn useful information out of the tensors.</p></li>
+<li><p><strong>The input size is fixed</strong>, which implies that the board size is
+also fixed. This is an inherent property of of the network
+structure, since we have a fixed number of output units for policy
+prediction.</p>
+<p>Since in a regular gameplay of Carcassonne there’s 72 tiles to be
+placed, the board may get as large as 72 tiles in its radius, which
+makes the input dimensions <span class="math inline">\(145\times 145\times M\)</span> where <span class="math inline">\(M\)</span> is the
+number of features per tile (which itself can grow over a hundred).</p></li>
+</ol>
+<p>At the time when I did the final project last year, I opted to limiting
+the board (table) size under a certain number. It worked, but it was
+like a crippled bot that couldn’t play normal games, and I wasn’t
+satisfied with it.</p>
+<p>There’s <a href="https://arxiv.org/abs/2107.08387">a fairly recent paper</a> about
+using graph neural networks (i.e. networks with graph data structure as
+their inputs) to alleviate the scalability problem of AlphaZero. In
+their work, they replaced CNN’s with GNN’s (graph neural networks),
+which addresses the fixed-sized input problem. However, they did <strong>not</strong>
+try to solve the input shape issue, since they’re using graphs with the
+same structure as inputs, regardless of the game state.</p>
+<figure>
+<img src="/images/othello-graph.png" alt="Grid-like graph structure for othello used in their work." />
+<figcaption aria-hidden="true">Grid-like graph structure for othello used in their
+work.</figcaption>
+</figure>
+<p>This looked wasteful to me - graphs are one of the most versatile
+representation of data, and can potentially carry a lot more information
+beyond the node features, ecspectially for Carcassonne. Human players of
+the game usually rely on tracing the <strong>conneceted area</strong> of features
+like castles and roads, counting <strong>the number of castles connected to a
+field</strong> and so on, which can be neatly modeled in a graph by adding
+different kinds of interconnections between the nodes.</p>
+<h2 id="background-graph-neural-networks">Background: Graph neural networks</h2>
+<p>Graph neural networks are, as suggested by the name, a class of deep
+learning models with graphs as the input data. The most popular GNN
+models are all based on the <strong>message-passing</strong> framework, meaning that
+for each layer of the network with input <span class="math inline">\(x^{(k-1)}\)</span>, we have the
+following formula to compute the next layer’s input.</p>
+<p><span class="math display">\[x_i^{(k)} = \sigma^{(k)} \left(x_i^{(k-1)}, \square_{j\in N(i)}\phi^{(k)}\left(x_i^{(k-1)}, x_j^{(k-1)}\right)\right)\]</span></p>
+<p>The math may seem scarry, but it’s nothing more than</p>
+<ol type="1">
+<li>Computing embeddings for each node within the neighborhood. The
+<span class="math inline">\(\phi\)</span> there computes a single embedding from two connected nodes.</li>
+<li><strong>Aggregating</strong> the computed node embeddings into a single vector.
+The <span class="math inline">\(\square\)</span> there can be mean, sum, or anything else.</li>
+<li>Applying a nonlinear function <span class="math inline">\(\sigma\)</span> to enhance its
+expressiveness.</li>
+</ol>
+<p>The conventional way to create graph neural networks is to use the
+<a href="https://github.com/pyg-team/pytorch_geometric">PyTorch Geometric</a>. Most
+well-known types of layers are included in the <code>torch_geometric.nn</code>
+module, so it’s usually not needed to reinvent the wheel from scratch.
+Training can be done as usual with back propagation using <code>torch.optim</code>,
+be it node-level prediction or graph-level prediction.</p>
+<p>For an in-depth walkthrough of graph neural networks I highly recommend
+<a href="https://www.youtube.com/playlist?list=PLoROMvodv4rPLKxIpqhjhPgdQy7imNkDn">CS224W lectures on
+stanfordonline</a>
+by Jure Leskovec, which covers almost all aspects of graph machine
+learning topics.</p>
+<h2 id="designing-a-gnn-for-carcassonne">Designing a GNN for Carcassonne</h2>
+<h3 id="the-input-graph">The input graph</h3>
+<p>For the sake of simplicity, I modeled the game states as <strong>undirected</strong>,
+<strong>homogeneous</strong> graph and <strong>without edge features</strong>. Each node
+represents either a tile, a feature (e.g. a single patch of a long
+road), or an connected area of features (e.g. a castle spanning across
+multiple tiles), each with additional data like occupation status stored
+as node features.</p>
+<p>The conversion from game states to graphs is designed solely based on
+(my) human knowledge about the game. Important edges such as</p>
+<ul>
+<li>those between candidate actions and tiles that are already placed</li>
+<li>those between areas of the same color,</li>
+<li>those between adjacent castles and fields, etc.</li>
+</ul>
+<p>are added to the graphs. I’m pretty bad at making diagrams, but this is
+my attempt - the actual graphs are much more complicated (and denser)
+than this one to model the complex dynamics of the game, but you get the
+idea:</p>
+<p><img src="/images/ccs.svg" /></p>
+<h3 id="the-model">The model</h3>
+<figure>
+<img src="/images/network.svg" alt="My current network diagram. Selfloops represent repetitions." />
+<figcaption aria-hidden="true">My current network diagram. Selfloops represent
+repetitions.</figcaption>
+</figure>
+<p>The overall network architecture is more or less the same as the one
+used in the <em>Train on Small, Play the Large</em> paper, except for some
+minor adjustments on the choice of layer types and pooling operations
+(mean v.s. sum). As of the time of writing, what I have now are</p>
+<ul>
+<li><p>Several dense layers for preprocessing the raw node features</p></li>
+<li><p>Three GATv2 attention layers from <a href="https://arxiv.org/abs/2105.14491"><em>How Attentive are Graph
+Attention Networks?</em></a>.</p></li>
+<li><p>A global <em>add</em> pool with several dense layers (and a sigmoid at the
+end) as the value head.</p>
+<p>This choice is based on <a href="https://arxiv.org/abs/1810.00826">the
+rationale</a> that summation is more
+powerful than mean or max operations when classifying graphs, which
+is closely related to our value prediction head (graph-level
+regression).</p>
+<figure>
+<img src="/images/x3.png" alt="Summation is more expressive when classifying graphs." />
+<figcaption aria-hidden="true">Summation is more expressive when classifying
+graphs.</figcaption>
+</figure></li>
+</ul>
+<h3 id="experimental-result-so-far">Experimental result so far</h3>
+<p>Preliminary experimental results last week suggested that this approach
+works for basic gameplay at least. The GNN-based model beaten random
+baseline agent within the first 6 hours of training, and is almost on
+par with my previous simple MCTS agent after two days of training. I’m
+still running it to see if it’s actually capable of improving beyond
+that level of strength.</p>
+<h1 id="closing-thoughts">Closing thoughts</h1>
+<p>A friend of mine once told me that he’s disappointed after learning all
+the deep learning stuff, because what we have are just “non-linear
+function twisting machines”.</p>
+<p>A lot of techniques in programming are actually all about pre-computing
+and storing answers. When the number of possible inputs is small, we
+build a lookup table. When the number of possible inputs is too large,
+we build a cache. When the number of possible inputs goes crazy, we
+build fancy function approximators (refered to as neural networks) to
+get inaccurate but still useful answers.</p>
+<p>We have what we have, and they’re at least effective for the goals we
+care about.</p>
+<hr />
+<h1 id="appendix-for-rants-deep-learning-and-rust">Appendix for rants: Deep learning and Rust</h1>
+<p>The AlphaZero algorithm itself seemed good until I started coding.
+<strong>Avoid Rust and stick to Python at all costs</strong> if you want to do DL
+stuff without shooting yourself in the foot.</p>
+<p>Most, if not all, of the deep machine learning toolchains are all
+tightly tied to the Python language, while I’ve written the game engine
+in Rust in the first place. Of course I could’ve re-written it in
+Python, but that would be whole orders of magnitude slower than the
+highly optimized Rust implementation. There’s also <a href="https://wiki.python.org/moin/GlobalInterpreterLock">the infamous global
+lock</a> in CPython,
+effectively preventing multiple threads from running at the same time.</p>
+<p>So far I’ve found several approaches to accessing popular DL frameworks
+(namely tensorflow and pytorch) from a Rust program - each with their
+own strengths and weaknesses. Below is a list of what I’ve tried within
+the last year or so, ordered by time:</p>
+<ol type="1">
+<li><p>The <a href="https://github.com/tensorflow/rust">TensorFlow bindings for
+Rust</a>.</p>
+<p>This was the route I went with the first time, but the experience
+left a bad taste in my mouth. Although it’s advertised as an
+“idiomatic wrapper” around the C API or TensorFlow (which is still
+experimental anyways), it’s awfully low level for regular tasks, and
+provides no obvious public API train existing model exported from
+Python code. I ended up with a workaround where I define the
+training routines (model training and saving) as decorated
+<code>@tf.function</code>’s and manually specifying the input type signatures.</p>
+<p>Aside from API usability issues, the library is a good fit for my
+use case.</p></li>
+<li><p>The <a href="https://github.com/LaurentMazare/tch-rs">PyTorch bindings for
+Rust</a>.</p>
+<p>This one is subjectively much more polished than that of TensorFlow.
+Their repository includes several examples demonstrating how to load
+and train TorchScript (jit) models exported from Python.</p>
+<p>It <em>almost</em> worked for training, except for that it lacks an API for
+saving optimizers. For a while, I forked the library and contributed
+some small patches upstream, but since I wasn’t expecting to
+maintain a DL library merely just to use it, I steered away from
+this quickly.</p></li>
+<li><p>Using PyTorch from Python, with gRPC for the inferencing service.</p>
+<p>This also <em>almost</em> worked for the purpose. There’s only one problem
+left: <em>it’s slow</em>. My (inaccurate) basic profiling suggests that the
+time spent on serializing + sending the tensors over the network is
+longer than the time spent on the model’s <code>forward()</code> call.</p></li>
+<li><p>Embed a Python interpreter in the Rust main program using
+<a href="https://pyo3.rs">PyO3</a>.</p>
+<p>This neat library enables us to translate the following code:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> model <span class="im">import</span> Model</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> Model()</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> model.to(<span class="st">&#39;cuda&#39;</span>)</span></code></pre></div>
+<p>into totally safe Rust code:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> model <span class="op">=</span> <span class="pp">Python::</span>with_gil(<span class="op">|</span>py<span class="op">|</span> <span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> model <span class="op">=</span> <span class="pp">PyModule::</span>import(py<span class="op">,</span> <span class="st">&quot;model&quot;</span>)<span class="op">?.</span>getattr(<span class="st">&quot;Model&quot;</span>)<span class="op">?;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> model <span class="op">=</span> model<span class="op">.</span>call0()<span class="op">?;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> model <span class="op">=</span> model<span class="op">.</span>getattr(<span class="st">&quot;to&quot;</span>)<span class="op">?.</span>call1((<span class="st">&quot;cuda&quot;</span><span class="op">,</span>))<span class="op">?;</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Ok</span>(model<span class="op">.</span>to_object(py))</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>)<span class="op">?;</span></span></code></pre></div>
+<p>There’s also a great accompanying library called
+<a href="https://lib.rs/crates/numpy">numpy</a> for Rust that allows
+conversions between numpy arrays on the Python side and <code>ndarray</code>
+types on the Rust side. For example, to send a node feature array
+from Rust to Python, one can do:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> to_torch <span class="op">=</span> torch<span class="op">.</span>getattr(<span class="st">&quot;from_numpy&quot;</span>)<span class="op">?;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> nodes <span class="op">=</span> graph<span class="op">.</span>nodes<span class="op">.</span>to_pyarray(py)<span class="op">;</span></span></code></pre></div>
+<p>There are still drawbacks of using an embedded Python interpreter
+though: <strong>It’s still slower than expected</strong>, and it’s not saturating
+all the available GPU resources for inference. Upon closer
+inspection and profiling, I suspect that this is once again caused
+by the GIL. After sending a job with <code>forward()</code> there’s virtually
+no way other threads can concurrently run <code>forward()</code> again on
+different threads, which hinders parallelism a lot, since the
+inference is done in a send-and-wait manner without any chance of
+overlapping multiple inferences, even though I <em>know</em> it’s
+completely safe to do so without potential risks of race conditions.</p></li>
+<li><p>Call C++ code from Rust using the <a href="https://cxx.rs">cxx crate</a>.</p>
+<p>My current approach. With this manual and verbose C++ solution, the
+GPU utilization stays &gt;95% most of the time.</p>
+<p>This library shifts the responsibility of doing safety checks from
+the <em>users</em> to the <em>compiler</em>, by making sure that the function
+signatures on both sides agree with each other.</p>
+<p>My setup is to have:</p>
+<ul>
+<li><p>A standalone CMake project doing all the libtorch-related stuff.
+The part is compiled as a static library for the main program(s)
+written in Rust to be linked with.</p></li>
+<li><p>A bridging interface between Rust and C++, compiled from the
+cargo side. To make the interface simple and flexible, raw
+<code>*mut T</code> pointers are passed.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">unsafe</span> <span class="kw">fn</span> inference(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">self</span><span class="op">:</span> <span class="op">&amp;</span>Gnn<span class="op">,</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    x_data<span class="op">:</span> <span class="op">*</span><span class="kw">mut</span> <span class="dt">f32</span><span class="op">,</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    x_shape<span class="op">:</span> <span class="op">*</span><span class="kw">mut</span> <span class="dt">i64</span><span class="op">,</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    x_shape_len<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    edge_index_data<span class="op">:</span> <span class="op">*</span><span class="kw">mut</span> <span class="dt">i64</span><span class="op">,</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    edge_index_shape<span class="op">:</span> <span class="op">*</span><span class="kw">mut</span> <span class="dt">i64</span><span class="op">,</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    edge_index_shape_len<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    batch_data<span class="op">:</span> <span class="op">*</span><span class="kw">mut</span> <span class="dt">i64</span><span class="op">,</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    batch_shape<span class="op">:</span> <span class="op">*</span><span class="kw">mut</span> <span class="dt">i64</span><span class="op">,</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    batch_shape_len<span class="op">:</span> <span class="dt">usize</span><span class="op">,</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> UniquePtr<span class="op">&lt;</span>InferenceOutput<span class="op">&gt;;</span></span></code></pre></div></li>
+</ul>
+<p>As we can see, a side effect of the raw pointers is that the
+argument list grows in its length quickly, but there’s very little I
+can do, since there must be some conversion between the <code>ndarray</code>
+types and memory buffers.</p></li>
+</ol>
+<hr /></main>
+
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>

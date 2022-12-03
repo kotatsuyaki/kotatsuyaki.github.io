@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+  <url>
+    <loc>https://blog.kotatsu.dev</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2021-09-19-carcassonne-ai-part-2/index.html</loc>
+    <lastmod>2021-09-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2021-09-18-carcassonne-ai/index.html</loc>
+    <lastmod>2021-09-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2021-09-14-vivado-on-nixos/index.html</loc>
+    <lastmod>2021-09-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2021-09-12-lazygit-modify-commit/index.html</loc>
+    <lastmod>2021-09-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2021-08-08-some-shell-files-on-nixos/index.html</loc>
+    <lastmod>2021-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2021-07-04-vim-config-in-nix/index.html</loc>
+    <lastmod>2021-07-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2021-07-04-nixos-quirks-solutions/index.html</loc>
+    <lastmod>2021-07-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2021-02-21-gentoo-on-rpi4-revisited/index.html</loc>
+    <lastmod>2021-02-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2021-02-17-my-tools-of-choice/index.html</loc>
+    <lastmod>2021-02-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2020-12-18-run-tensorflow-on-rtx-30/index.html</loc>
+    <lastmod>2020-12-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2020-10-23-tmux-open-same-dir/index.html</loc>
+    <lastmod>2020-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2020-10-10-circle-ellipse-problem/index.html</loc>
+    <lastmod>2020-10-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2020-09-06-gentoo-podman-setup/index.html</loc>
+    <lastmod>2020-09-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2020-07-31-include-bytes-include-str-difference/index.html</loc>
+    <lastmod>2020-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2020-07-30-vim-coc-rust-gl-completion/index.html</loc>
+    <lastmod>2020-07-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2020-07-29-optimize-gitlab-pages-loadtime/index.html</loc>
+    <lastmod>2020-07-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2020-02-13-extract-template-params-cpp/index.html</loc>
+    <lastmod>2020-02-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2019-12-19-add-ethernet-pihole/index.html</loc>
+    <lastmod>2019-12-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2019-07-20-pihole-ap/index.html</loc>
+    <lastmod>2019-07-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2019-06-24-start-emacs/index.html</loc>
+    <lastmod>2019-06-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://blog.kotatsu.dev/posts/2019-04-23-wordpress-rest-bulk-post/index.html</loc>
+    <lastmod>2019-04-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+</urlset>

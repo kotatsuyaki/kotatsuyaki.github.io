@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" >
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="hakyll" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+    
+    <!-- type is "article" -->
+    <meta name="author" content="kotatsuyaki (Ming-Long Huang)" />
+    <title>Reducing Gitlab Page Load Time</title>
+    
+    <meta name="dcterms.created" content="2020-07-29" />
+    
+
+    
+
+    <meta name="description" content="Personal programming blog by kotatsuyaki" />
+
+    
+
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/css/code.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML">
+    </script>
+    <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "99e08f27b6a44242bd92bff375e5efca"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+    
+    <!-- Post page -->
+    <header>
+        <h1 class="title">Reducing Gitlab Page Load Time</h1>
+        <blockquote class="metadata">
+            
+            <p class="author">
+                kotatsuyaki (Ming-Long Huang)
+            </p>
+            
+            <p class="date ">
+                Published <time datetime="2020-07-29">2020-07-29</time> on <a href="https://blog.kotatsu.dev">kotatsuyaki's blog</a>
+            </p>
+            
+        </blockquote>
+    </header>
+    <main><p>I’ve been migrating the old blog to here for a while. The site is now
+generated using
+<a href="https://www.getzola.org/documentation/getting-started/installation/">Zola</a>
+instead of Hexo, because I’d like to ditch Node.js based tools in favor
+of those written in Rust, and partly just for fun.</p>
+<hr />
+<h1 id="minimize-and-inline-css">Minimize and Inline CSS</h1>
+<p>The site is using slightly modified
+<a href="https://github.com/sirodoht/zola-henry">zola-henry</a> theme at the
+moment, which contains just a single CSS file. We first minimize it.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cssnano <span class="op">&lt;</span> henry-full.cs <span class="op">&gt;</span> henry.css</span></code></pre></div>
+<p>Then, modify the theme template to inline the CSS file instead of using
+a <code>&lt;link&gt;</code> tag.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>{% set henry_css = load_data(path=&quot;themes/henry/static/henry.css&quot;) %}</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">&lt;style&gt;</span>{{ henry_css <span class="op">|</span> safe }}<span class="kw">&lt;/style&gt;</span></span></code></pre></div>
+<!-- more -->
+<h1 id="gzip-compression">Gzip Compression</h1>
+<p>Although it’s not found anywhere in their official documentation, gzip
+compression is actually supported for Gitlab Pages. Compression can be
+enabled by simply placing <code>.gz</code> files alongside the static files. We
+achieve this by adding a single line to the CI config file.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">script</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">  # ...</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> gzip --keep --best $(find public -type f)</span></span></code></pre></div>
+<p>The result can be verified using
+curl<span class="sidenote-wrapper"><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle"/><span class="sidenote">Ideally
+with <code>curl -I</code> one can see the <code>Content-Length</code> header, so it shouldn’t
+be necessary to count length with <code>wc</code>. However, <a href="https://gitlab.com/gitlab-org/gitlab-pages/-/issues/315">there’s a
+bug</a> causing
+the length field to be missing.<br />
+<br />
+</span></span>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> curl <span class="at">-s</span> <span class="st">&#39;https://akitaki.gitlab.io/optimize-gitlab-pages-loadtime/&#39;</span> <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-c</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">9094</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> curl <span class="at">-sH</span> <span class="st">&#39;Accept-Encoding: gzip,deflate&#39;</span> https://akitaki.gitlab.io/optimize-gitlab-pages-loadtime/ <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-c</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="ex">3205</span></span></code></pre></div>
+<h1 id="references">References</h1>
+<ul>
+<li><a href="https://github.com/getzola/zola/issues/605" class="uri">https://github.com/getzola/zola/issues/605</a></li>
+<li><a href="https://gitlab.com/gitlab-org/gitlab-pages/-/merge_requests/25" class="uri">https://gitlab.com/gitlab-org/gitlab-pages/-/merge_requests/25</a></li>
+</ul></main>
+
+
+    
+
+    <!-- Shared between the index page & post pages -->
+    <script>
+        ; (function () {
+            // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+            var selector = '.task-list > li > input[type="checkbox"]';
+            var checkboxes = document.querySelectorAll(selector);
+            Array.from(checkboxes).forEach((checkbox) => {
+                var wasChecked = checkbox.checked;
+                checkbox.disabled = false;
+                checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+            });
+        })();
+    </script>
+</body>
+
+</html>
