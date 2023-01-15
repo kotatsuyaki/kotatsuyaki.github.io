@@ -1,0 +1,29 @@
+project:
+  type: website
+
+resources:
+  - CNAME
+
+website:
+  site-url: "https://blog.kotatsu.dev/"
+  title: "kotatsuyaki's blog"
+  navbar:
+    right:
+      - about.qmd
+      - icon: github
+        href: https://github.com/kotatsuyaki
+
+format:
+  html:
+    theme:
+      light:
+        - default
+        - ./styles/light.scss
+        - ./styles/shared.scss
+      dark:
+        - default
+        - ./styles/dark.scss
+        - ./styles/shared.scss
+    code-copy: true
+    code-fold: true
+    highlight-style: github

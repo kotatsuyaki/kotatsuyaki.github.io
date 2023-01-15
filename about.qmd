@@ -1,0 +1,13 @@
+---
+title: "About"
+about:
+  template: solana
+  links:
+    - icon: github
+      text: Github
+      href: https://github.com/kotatsuyaki
+---
+
+I jumped through these hoops and wrote about them so that you don't have to.
+
+My name is Ming-Long Huang, though most of the time I use the handle *kotatsuyaki* on the Internet. Currently I am a graduate student in computer science at [Programming Language Lab](http://pllab.cs.nthu.edu.tw/) at NTHU, Taiwan.

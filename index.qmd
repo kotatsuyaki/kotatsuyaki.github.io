@@ -1,0 +1,16 @@
+---
+listing:
+  contents: posts
+  sort: "date desc"
+  type: default
+  categories: true
+  sort-ui: false
+  filter-ui: false
+  max-description-length: 2500
+page-layout: full
+format:
+  html:
+    margin-header: "I jumped through these hoops and wrote about them so that you don't have to."
+---
+
+

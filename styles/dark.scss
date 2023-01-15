@@ -1,0 +1,31 @@
+/*-- scss:defaults --*/
+
+// The following color variables are took from:
+// https://quarto.org/docs/output-formats/html-themes.html#customizing-themes
+
+// Colors
+$body-bg: #282828;
+$body-color: #eeeeee;
+$link-color: #69b4ff;
+$input-bg: #333333;
+$popover-bg: #444444;
+
+// Code Blocks
+$code-block-bg: #282828;
+
+// Inline Code
+$code-color: #ccb4f0;
+
+// Navbar
+$navbar-bg: #111111;
+$navbar-fg: #eeeeee;
+
+$callout-color-note: #69b4ff;
+
+/*-- scss:rules --*/
+.callout.callout-style-default {
+  border-left: $callout-border-width solid;
+  border-right: none;
+  border-top: none;
+  border-bottom: none;
+}

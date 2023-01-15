@@ -5,3 +5,6 @@ dist
 dist-newstyle
 node_modules
 result
+
+/.quarto/
+/_site/
