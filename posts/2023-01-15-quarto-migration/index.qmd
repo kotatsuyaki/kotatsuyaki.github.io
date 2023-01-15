@@ -1,0 +1,70 @@
+---
+title: This Blog (Finally) Settled Down with Quarto
+description: The What, Why, and How of Migrating Technical Writings to Quarto
+author: kotatsuyaki
+date: 2023-01-15
+image: quarto.png
+draft: true
+format:
+  html:
+    toc: true
+---
+
+Hello Internet, it's been a while since my last blog post.
+Between the previous and this post, a lot was going on for me --- I have become a graduate student, and I'm starting to get busy with some research and software projects.
+
+I've spent a day migrating this blog to be generated using [Quarto], a multi-format publishing system, instead of using other generic static site generators (SSG) designed for blogs.
+This post summarizes the reason behind the migration, as well as the tweaks I've applied to make the rendered website satisfactory to my own tastes.
+
+# The History of the Blog
+
+The oldest post that's still listed on the homepage of this blog dates back to July 2019, and there were some posts written as early as 2018 that got removed due to their poor quality.
+In the same way that I used to be a distro hopper, the static site generator (SSG) used for this blog has also been changed multiple times throughout its history.
+
+## Hexo and Zola: Sweet SSG's
+
+The site started off as a [Hexo]-generated site.
+It was an arbitrary choice from one of the most-starred blogging frameworks on GitHub, and with the [Clean Blog Hexo] theme it really served well for my design taste at the time.
+Then, the site got migrated to [Zola] for its speed and its single binary standalone-ness, but the look and feel of the site remained pretty much the same as before.
+
+## Hakyll: Pandoc that Doesn't Support Pandoc Filters
+
+Later on, I stumbled upon [Hakyll], which is not a static site generator per itself, but rather is *a library* for users to build their own ones using a DSL in the Haskell programming language.
+Just like Quarto, the Hakyll library is also built upon [Pandoc], more on that later.
+As a taste of what an SSG looks like in Hakyll, here's an excerpt of my implementation.
+```haskell
+main :: IO ()
+main = do
+  args <- getArgs
+  withArgs args $
+    hakyllWith config $ do
+      match postsPattern $ do
+        route niceRoute
+        compile $ do
+          -- Compile and save the teaser
+          _ <- pandocTeaserCompiler >>= saveSnapshot "teaser"
+
+          -- Compile the post and apply post template
+          pandocPostCompiler
+            >>= loadAndApplyTemplate "templates/postbody.html" postCtx
+            >>= loadAndApplyTemplate "templates/shared.html" postCtx
+```
+Leaving aside my unfamiliarity with functional programming languages, it's not the most pleasant way of writing when I had to compile my own SSG before even getting a preview of the rendered website.
+
+Besides that, since some of my posts were adapted from academic writings with [Pandoc] and a bunch of pandoc filters[^filters] (for cross-references and citations), I was surprised that Hakyll, a library built upon Pandoc, does not support Pandoc filters natively.
+I ended up adopting a workaround[^workaround] that feeds the intermediate Markdown text into the `pandoc` binary, but it was far from ideal.
+The amount of labor necessary to produce a nice-looking blog with Hakyll with cross-references and citations eventually absorbed my passion, and the task was postponed to forever.
+
+[^filters]: [Pandoc filters](https://pandoc.org/filters.html) are third-party AST transformations that provides extensions to the Markdown syntax.
+[^workaround]: https://github.com/jaspervdj/hakyll/issues/365#issuecomment-354314197
+
+# Why Quarto
+
+# Technical Blogging with Quarto
+
+[Quarto]: https://quarto.org/
+[Pandoc]: pandoc.org
+[Hexo]: https://hexo.io/
+[Zola]: https://www.getzola.org/
+[Clean Blog Hexo]: https://github.com/klugjo/hexo-theme-clean-blog
+[Hakyll]: https://jaspervdj.be/hakyll/
