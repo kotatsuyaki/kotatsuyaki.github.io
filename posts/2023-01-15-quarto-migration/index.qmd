@@ -5,6 +5,7 @@ author: kotatsuyaki
 date: 2023-01-15
 image: quarto.png
 draft: true
+license: "CC BY-NC"
 format:
   html:
     toc: true
@@ -51,14 +52,69 @@ main = do
 ```
 Leaving aside my unfamiliarity with functional programming languages, it's not the most pleasant way of writing when I had to compile my own SSG before even getting a preview of the rendered website.
 
-Besides that, since some of my posts were adapted from academic writings with [Pandoc] and a bunch of pandoc filters[^filters] (for cross-references and citations), I was surprised that Hakyll, a library built upon Pandoc, does not support Pandoc filters natively.
+Besides that, since some of my posts were adapted from semi-academic writings with [Pandoc] and a bunch of pandoc filters[^filters] (for cross-references and citations), I was surprised that Hakyll, a library built upon Pandoc, does not support Pandoc filters natively.
 I ended up adopting a workaround[^workaround] that feeds the intermediate Markdown text into the `pandoc` binary, but it was far from ideal.
-The amount of labor necessary to produce a nice-looking blog with Hakyll with cross-references and citations eventually absorbed my passion, and the task was postponed to forever.
+The amount of labor necessary to produce a nice-looking blog with Hakyll with my favorite filters eventually absorbed my passion (and time), and thus the task was postponed forever.
 
 [^filters]: [Pandoc filters](https://pandoc.org/filters.html) are third-party AST transformations that provides extensions to the Markdown syntax.
-[^workaround]: https://github.com/jaspervdj/hakyll/issues/365#issuecomment-354314197
+[^workaround]: <https://github.com/jaspervdj/hakyll/issues/365#issuecomment-354314197>
 
 # Why Quarto
+
+## Quarto = Pandoc + Build System
+
+Before discovering Quarto, I used Pandoc for this purpose throughout my college life for all sorts of school works.
+While it did serve the purpose well, configuring for different output formats has always been a pain point.
+To produce output documents that look good, I've always found myself creating a set of scripts and Makefiles, similar to [this blog post][markdown-pandoc-make] by Achintya Rao, although my setup was even more involved due to the use of multiple Pandoc filters and templates.
+Re-inventing a build system based on Makefiles gets old quickly.
+
+The cause behind this problem is that with Pandoc, the build configuration is by default separate from the source documents themselves.
+Similar to how a single-source CUDA file containing the closely-related host and device functions is more readable than OpenCL functions scattered in two or more files,
+Quarto hugely increased the usability by putting build configurations within the frontmatter block.
+Building the files is just a matter of `quarto render path/to/file.qmd --to pdf`, since the `.qmd` files are self-contained with build configurations.
+
+```{#lst-front-matter .yaml lst-cap="The frontmatter of this blog post for both HTML and PDF outputs."}
+format:
+  html:
+    toc: true
+    code-fold: true
+  pdf:
+    papersize: a4
+    geometry:
+      - margin=1in
+```
+
+## Quarto = SSG + Technical Writing
+
+Quarto also bundles some sweet features by default, which are unlikely to be seen in any general-purpose static site generators.
+Here's an incomplete list of what it's capable of, when it comes to scientific & technical writing.
+
+- Inline [Mermaid] and [Graphviz] diagrams.
+- BibTeX citations with CSL formatting.
+- Theorems and proofs.
+- Cross-references to figures, tables, listings, and sections.
+- *Computations*.
+
+### Drawing Diagrams in Markdown with Code
+
+The last item in the list above is the most unusual.
+[The *computation* feature of Quarto][quarto-comp] allows users to write Python[^not-just-python] code that draws diagrams *within the Markdown files*, and then show the resulting diagrams within the rendered documents, similar to how Jupyter Notebook works.
+My old workflow of embedding experimental data within documents used to be like this:
+
+1. Choose a type of diagram (bar, pie, line, scatter, etc.) and a style (fonts, colors, aspect ratios) beforehand.
+2. Create diagrams in Python using libraries like `matplotlib` and save them as bitmap images.
+3. Embed the images into the documents to re-evaluate the appearance.
+
+Not only was this workflow tedious, updating the document in the future was also difficult. Suppose that at some point, a diagram needs an update for appearance. Unless the diagram-drawing code is checked into version control alongside the document source, I would need to retrieve the original data and rewrite the new diagram-drawing code from scratch. Quarto, by embedding code into Markdown files, offers a workflow free of such problem.
+
+[^not-just-python]: As of this writing, Quarto also supports using R and Julia for computations.
+
+## It's All About Reproducibility
+
+It took me a while to realize that the biggest contribution made by Quarto is to make publications *reproducible*.
+By merging build configuration and data into document sources,
+reproducibility is greatly improved.
+Not only does the improvement in reproducibility grant me peace of mind, but it also makes sharing and collaboration between multiple writers feasible.
 
 # Technical Blogging with Quarto
 
@@ -68,3 +124,8 @@ The amount of labor necessary to produce a nice-looking blog with Hakyll with cr
 [Zola]: https://www.getzola.org/
 [Clean Blog Hexo]: https://github.com/klugjo/hexo-theme-clean-blog
 [Hakyll]: https://jaspervdj.be/hakyll/
+[defaults]: https://pandoc.org/MANUAL.html#defaults-files
+[markdown-pandoc-make]: https://blog.achintyarao.in/post/markdown-pandoc-make/
+[Mermaid]: mermaid-js.github.io/
+[Graphviz]: https://graphviz.org/
+[quarto-comp]: https://quarto.org/docs/computations/python.html
